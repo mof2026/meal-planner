@@ -679,6 +679,7 @@ function removeBreakfastPattern(idx) {
 function exportSettings() {
   const data = {
     _type: 'meal_planner_settings',
+    _schemaVersion: 1,
     _exported: new Date().toISOString(),
     breakfastPatterns: breakfastPatterns,
     rules: getRules(),
@@ -721,14 +722,19 @@ document.getElementById('settings-file').addEventListener('change', function(e) 
       if (!confirm('以下を上書きします：\n' + parts.join('、') + '\n\nよろしいですか？')) return;
 
       if (Array.isArray(data.breakfastPatterns)) {
-        breakfastPatterns = data.breakfastPatterns;
+        breakfastPatterns = data.breakfastPatterns
+          .filter(p => p && typeof p.name === 'string' && p.name.trim())
+          .map(p => ({
+            name: String(p.name),
+            ingredients: typeof p.ingredients === 'string' ? p.ingredients : ''
+          }));
         Storage.set('bpats', breakfastPatterns);
       }
-      if (data.rules && typeof data.rules === 'object') {
+      if (data.rules && typeof data.rules === 'object' && !Array.isArray(data.rules)) {
         Storage.set('rules', data.rules);
       }
       if (Array.isArray(data.priorities)) {
-        priorities = data.priorities;
+        priorities = data.priorities.filter(p => typeof p === 'string');
         Storage.set('prio', priorities);
       }
 
