@@ -6,7 +6,7 @@
 <title>献立プランナー</title>
 <style>
 :root {
-  --bg: #FAF8F5;
+  --bg: #F7F4EF;
   --line: #E8E4DF;
   --text: #5C5550;
   --text-mid: #8A847E;
@@ -184,6 +184,54 @@ body {
 @media (min-width: 768px) {
   .modal { max-width: 560px; margin: 0 auto; border-radius: 12px; }
   .overlay.open { align-items: center; justify-content: center; }
+
+  /* Tablet: bump font sizes */
+  body { font-size: 16px; }
+  .hd h1 { font-size: 14px; }
+  .hd-a button { font-size: 17px; }
+  .pnl-lb { font-size: 12px; }
+  .rg .rl { font-size: 13px; }
+  .rg select { font-size: 14px; }
+  .rr { font-size: 12px; }
+  .bp-item span { font-size: 13px; }
+  .bp-item .bp-ing { font-size: 11px; }
+  .bp-add input { font-size: 13px; }
+  .bp-add button { font-size: 12px; }
+  .csv-d { font-size: 13px; }
+  .csv-s { font-size: 12px; }
+  .pri-lb { font-size: 12px; }
+  .pri-tag { font-size: 13px; }
+  .pri input { font-size: 13px; }
+  .ab button { font-size: 13px; }
+  .tl-empty { font-size: 14px; }
+  .day-name { font-size: 12px; }
+  .day-date { font-size: 11px; }
+  .day-cat { font-size: 11px; }
+  .day-main { font-size: 17px; }
+  .day-sides { font-size: 13px; }
+  .day-actions button { font-size: 11px; }
+  .ing-toggle summary { font-size: 12px; }
+  .ing-content { font-size: 13px; }
+  .ing-ref { font-size: 11px; }
+  .day-edit textarea { font-size: 15px; }
+  .day-edit-actions button { font-size: 12px; }
+  .day-bf { font-size: 13px; }
+  .day-bf-label { font-size: 10px; }
+  .day-bf select { font-size: 13px; }
+  .day-bf-text { font-size: 13px; }
+  .modal-title { font-size: 14px; }
+  .shop-day h3 { font-size: 12px; }
+  .shop-day pre { font-size: 13px; }
+
+  /* Tablet: wider padding */
+  .hd { padding: 28px 32px 18px; }
+  .pnl { padding: 18px 32px 24px; }
+  .pri { padding: 12px 32px; }
+  .ab { padding: 12px 32px; }
+  .tl { padding: 0 32px 120px; }
+
+  /* Tablet: max-width for readability */
+  .tl { max-width: 720px; }
 }
 </style>
 </head>
@@ -209,6 +257,14 @@ body {
       <input type="text" id="bp-name-input" placeholder="メニュー名…" style="flex:2">
       <input type="text" id="bp-ing-input" placeholder="材料（任意）…" style="flex:3">
       <button onclick="addBreakfastPattern()">追加</button>
+    </div>
+  </div>
+  <div style="margin-top:20px">
+    <div class="pnl-lb">設定データ（朝食パターン・曜日ルール・優先食材）</div>
+    <div style="display:flex;gap:12px;margin-top:8px">
+      <button class="rr" style="margin:0" onclick="exportSettings()">書き出し</button>
+      <button class="rr" style="margin:0" onclick="document.getElementById('settings-file').click()">読み込み</button>
+      <input type="file" id="settings-file" accept=".json" style="display:none">
     </div>
   </div>
 </div>
@@ -651,6 +707,77 @@ function removeBreakfastPattern(idx) {
   renderBreakfastPatterns();
   render();
 }
+
+/* ----- Settings Export / Import ----- */
+
+function exportSettings() {
+  const data = {
+    _type: 'meal_planner_settings',
+    _exported: new Date().toISOString(),
+    breakfastPatterns: breakfastPatterns,
+    rules: getRules(),
+    priorities: priorities
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '献立プランナー設定_' +
+    todayISO().replace(/-/g, '') + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('settings-file').addEventListener('change', function(e) {
+  if (!e.target.files.length) return;
+  const file = e.target.files[0];
+  if (file.size > 1 * 1024 * 1024) {
+    alert('ファイルサイズが大きすぎます');
+    e.target.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data._type !== 'meal_planner_settings') {
+        alert('献立プランナーの設定ファイルではありません');
+        return;
+      }
+      const parts = [];
+      if (Array.isArray(data.breakfastPatterns)) parts.push('朝食パターン ' + data.breakfastPatterns.length + '件');
+      if (data.rules) parts.push('曜日ルール');
+      if (Array.isArray(data.priorities) && data.priorities.length) parts.push('優先食材 ' + data.priorities.length + '件');
+      if (!parts.length) { alert('読み込めるデータがありません'); return; }
+
+      if (!confirm('以下を上書きします：\n' + parts.join('、') + '\n\nよろしいですか？')) return;
+
+      if (Array.isArray(data.breakfastPatterns)) {
+        breakfastPatterns = data.breakfastPatterns;
+        Storage.set('bpats', breakfastPatterns);
+      }
+      if (data.rules && typeof data.rules === 'object') {
+        Storage.set('rules', data.rules);
+      }
+      if (Array.isArray(data.priorities)) {
+        priorities = data.priorities;
+        Storage.set('prio', priorities);
+      }
+
+      renderRules();
+      renderBreakfastPatterns();
+      renderPriorityTags();
+      render();
+      alert('設定を読み込みました');
+    } catch (err) {
+      alert('ファイルの読み込みに失敗しました');
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+  e.target.value = '';
+});
 
 /* ----- CSV Import ----- */
 
