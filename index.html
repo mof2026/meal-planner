@@ -166,7 +166,11 @@ body {
 .pri-lb { font-size: 11px; color: var(--text-faint); white-space: nowrap; }
 #priority-tags { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .pri-tag { font-size: 12px; color: var(--text); border-bottom: 1px solid var(--line); padding: 1px 2px; display: inline-flex; align-items: center; gap: 4px; }
-.pri-tag button { background: none; border: none; color: var(--text-faint); font-size: 12px; cursor: pointer; padding: 0; }
+.pri-tag button {
+  background: none; border: none; color: var(--text-faint);
+  font-size: 16px; line-height: 1; cursor: pointer;
+  width: 18px; height: 18px; padding: 0;
+}
 .pri input {
   font-family: var(--font); font-size: 12px; font-weight: 300; color: var(--text);
   border: none; border-bottom: 1px solid var(--line); outline: none;
@@ -330,6 +334,36 @@ body {
 .shop-day { border-top: 1px solid var(--line); padding: 10px 0; }
 .shop-day h3 { font-size: 11px; font-weight: 300; color: var(--text-faint); margin-bottom: 4px; letter-spacing: .06em; }
 .shop-day pre { font-family: var(--font); font-size: 12px; font-weight: 300; color: var(--text); white-space: pre-wrap; line-height: 1.7; }
+.note-toolbar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.note-toolbar button,
+.note-actions button,
+.note-form-actions button {
+  font-family: var(--font); font-size: 11px; font-weight: 300;
+  color: var(--text-mid); background: none; border: none; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 2px;
+}
+.note-toolbar .danger,
+.note-actions .danger { color: var(--text-faint); }
+.note-empty { color: var(--text-faint); font-size: 13px; padding: 20px 0; }
+.note-list { display: grid; gap: 12px; }
+.note-item { border-top: 1px solid var(--line); padding-top: 10px; }
+.note-item-title { font-size: 13px; color: var(--text); line-height: 1.5; overflow-wrap: anywhere; }
+.note-meta { font-size: 10px; color: var(--text-light); line-height: 1.6; margin-top: 2px; }
+.note-text { font-size: 12px; color: var(--text-mid); white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; margin-top: 6px; }
+.note-actions { display: flex; gap: 12px; margin-top: 8px; }
+.note-form { display: grid; gap: 10px; }
+.note-form label { display: grid; gap: 4px; font-size: 10px; color: var(--text-light); letter-spacing: .04em; }
+.note-form input,
+.note-form select,
+.note-form textarea {
+  font-family: var(--font); font-size: 13px; font-weight: 300; color: var(--text);
+  background: transparent; border: none; border-bottom: 1px solid var(--line);
+  border-radius: 0; outline: none; padding: 3px 0; min-width: 0;
+}
+.note-form textarea { min-height: 96px; resize: vertical; line-height: 1.7; }
+.note-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.note-form-actions { display: flex; gap: 14px; margin-top: 4px; }
+.note-form-actions .save-btn { color: var(--text); }
 
 @media (min-width: 768px) {
   .modal { max-width: 560px; margin: 0 auto; border-radius: 12px; }
@@ -402,6 +436,7 @@ body {
     <button onclick="lotteryDrafts()">抽選</button>
     <button onclick="exportMealPlan()">献立保存</button>
     <button onclick="openShoppingList()">買い物リスト</button>
+    <button id="change-notes-button" onclick="openChangeNotesList()">変更メモ</button>
     <button onclick="resetAll()">リセット</button>
   </div>
 </aside>
@@ -457,6 +492,14 @@ body {
     <button class="modal-close" onclick="closeShoppingList()">✕</button>
     <div class="modal-title">買い物リスト</div>
     <div id="shop-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="note-overlay" onclick="closeChangeNotes(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeChangeNotes()">✕</button>
+    <div class="modal-title" id="note-title">変更メモ</div>
+    <div id="note-body"></div>
   </div>
 </div>
 
@@ -843,6 +886,39 @@ const DEFAULT_BREAKFAST_PATTERNS = [
   { name: 'グラノーラ・バナナ・ヨーグルト', ingredients: 'グラノーラ、バナナ、ヨーグルト' }
 ];
 
+const CHANGE_NOTE_ACTIONS = [
+  { value: 'add', label: '追加' },
+  { value: 'update', label: '修正' },
+  { value: 'delete', label: '削除' },
+  { value: 'other', label: 'その他' }
+];
+
+const CHANGE_NOTE_TARGET_KINDS = [
+  { value: 'recipe', label: 'レシピ' },
+  { value: 'mealset', label: '献立例' },
+  { value: 'breakfast', label: '朝食' },
+  { value: 'rule', label: '曜日ルール' },
+  { value: 'other', label: 'その他' }
+];
+
+const CHANGE_NOTE_FIELDS = [
+  { value: 'name', label: '名前' },
+  { value: 'category', label: 'カテゴリ' },
+  { value: 'tag', label: 'タグ' },
+  { value: 'ingredients', label: '主な材料' },
+  { value: 'mealExample', label: '献立例' },
+  { value: 'book', label: 'レシピ本' },
+  { value: 'page', label: 'ページ' },
+  { value: 'other', label: 'その他' }
+];
+
+const CHANGE_NOTE_SLOT_LABELS = {
+  main: '主菜',
+  side1: '副菜1',
+  side2: '副菜2',
+  soup: '汁物'
+};
+
 /* ----- Date helpers (local timezone safe) ----- */
 
 function toLocalDate(isoString) {
@@ -1113,6 +1189,14 @@ function escapeHTML(str) {
     .replace(/'/g, '&#39;');
 }
 
+function escapeJSString(str) {
+  return String(str)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/\r/g, '\\r')
+    .replace(/\n/g, '\\n');
+}
+
 function togglePanel(id) {
   const panel = document.getElementById(id);
   const willOpen = panel && !panel.classList.contains('open');
@@ -1346,8 +1430,59 @@ let soupCandidates = recipeData.soupCandidates;
 let entries = Storage.get('entries') || [];
 let priorities = Storage.get('prio') || [];
 let breakfastPatterns = Storage.get('bpats') || [...DEFAULT_BREAKFAST_PATTERNS];
+let changeNotes = (Storage.get('changeNotes') || [])
+  .map(normalizeChangeNote)
+  .filter(Boolean);
 
 function saveEntries() { Storage.set('entries', entries); }
+
+function isAllowedChangeNoteValue(list, value) {
+  return list.some(item => item.value === value);
+}
+
+function makeChangeNoteId() {
+  return 'note:' + Date.now().toString(36) + ':' +
+    Math.floor(Math.random() * 0xFFFFFF).toString(36);
+}
+
+function normalizeChangeNote(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const target = raw.target && typeof raw.target === 'object' && !Array.isArray(raw.target)
+    ? raw.target
+    : {};
+  const action = isAllowedChangeNoteValue(CHANGE_NOTE_ACTIONS, raw.action) ? raw.action : 'update';
+  const kind = isAllowedChangeNoteValue(CHANGE_NOTE_TARGET_KINDS, target.kind) ? target.kind : 'other';
+  const field = isAllowedChangeNoteValue(CHANGE_NOTE_FIELDS, raw.field) ? raw.field : 'other';
+  const slotName = Object.prototype.hasOwnProperty.call(CHANGE_NOTE_SLOT_LABELS, target.slotName)
+    ? target.slotName
+    : null;
+  const date = typeof target.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(target.date)
+    ? target.date
+    : null;
+  const now = new Date().toISOString();
+  return {
+    id: typeof raw.id === 'string' && raw.id ? raw.id : makeChangeNoteId(),
+    createdAt: typeof raw.createdAt === 'string' && raw.createdAt ? raw.createdAt : now,
+    updatedAt: typeof raw.updatedAt === 'string' && raw.updatedAt ? raw.updatedAt : now,
+    action: action,
+    target: {
+      kind: kind,
+      recipeId: target.recipeId != null && target.recipeId !== '' ? String(target.recipeId) : null,
+      name: typeof target.name === 'string' ? target.name : '',
+      book: typeof target.book === 'string' ? target.book : '',
+      page: typeof target.page === 'string' ? target.page : '',
+      date: date,
+      slotName: slotName
+    },
+    field: field,
+    note: typeof raw.note === 'string' ? raw.note : ''
+  };
+}
+
+function saveChangeNotes() {
+  Storage.set('changeNotes', changeNotes);
+  renderChangeNoteButton();
+}
 
 function pruneOldEntries() {
   const before = entries.length;
@@ -1499,6 +1634,344 @@ function removeBreakfastPattern(idx) {
   Storage.set('bpats', breakfastPatterns);
   renderBreakfastPatterns();
   render();
+}
+
+/* ----- Change Notes ----- */
+
+function getChangeNoteLabel(list, value) {
+  const item = list.find(opt => opt.value === value);
+  return item ? item.label : value;
+}
+
+function changeNoteTargetText(note) {
+  const target = note.target || {};
+  const parts = [];
+  parts.push(getChangeNoteLabel(CHANGE_NOTE_TARGET_KINDS, target.kind || 'other'));
+  if (target.name) parts.push(target.name);
+  if (target.book) parts.push(target.book + (target.page ? ' p.' + target.page : ''));
+  else if (target.page) parts.push('p.' + target.page);
+  if (target.date) parts.push(formatDate(target.date));
+  if (target.slotName) parts.push(CHANGE_NOTE_SLOT_LABELS[target.slotName] || target.slotName);
+  return parts.filter(Boolean).join(' / ');
+}
+
+function changeNoteTitle(note) {
+  const action = getChangeNoteLabel(CHANGE_NOTE_ACTIONS, note.action);
+  const target = changeNoteTargetText(note) || '対象未指定';
+  return '[' + action + '] ' + target;
+}
+
+function renderChangeNoteButton() {
+  const btn = document.getElementById('change-notes-button');
+  if (!btn) return;
+  btn.textContent = changeNotes.length ? '変更メモ (' + changeNotes.length + ')' : '変更メモ';
+}
+
+function showChangeNotesModal() {
+  document.getElementById('note-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeChangeNotes(e) {
+  if (e && e.target !== document.getElementById('note-overlay')) return;
+  document.getElementById('note-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function openChangeNotesList() {
+  document.getElementById('note-title').textContent = '変更メモ';
+  renderChangeNotesList();
+  showChangeNotesModal();
+}
+
+function renderChangeNotesList() {
+  const body = document.getElementById('note-body');
+  let html = '<div class="note-toolbar">' +
+    '<button onclick="openChangeNoteEditor()">新規メモ</button>' +
+    '<button onclick="exportChangeNotesJSON()">JSON書き出し</button>' +
+    '<button onclick="exportChangeNotesMarkdown()">Markdown書き出し</button>';
+  if (changeNotes.length) {
+    html += '<button class="danger" onclick="clearChangeNotes()">全削除</button>';
+  }
+  html += '</div>';
+
+  if (!changeNotes.length) {
+    html += '<div class="note-empty">変更メモはまだありません</div>';
+    body.innerHTML = html;
+    return;
+  }
+
+  html += '<div class="note-list">';
+  changeNotes
+    .slice()
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .forEach(note => {
+      const noteId = escapeHTML(escapeJSString(note.id));
+      html += '<div class="note-item">' +
+        '<div class="note-item-title">' + escapeHTML(changeNoteTitle(note)) + '</div>' +
+        '<div class="note-meta">' +
+          escapeHTML(getChangeNoteLabel(CHANGE_NOTE_FIELDS, note.field)) +
+          ' / 作成 ' + escapeHTML(formatDateTime(note.createdAt)) +
+          ' / 更新 ' + escapeHTML(formatDateTime(note.updatedAt)) +
+        '</div>' +
+        '<div class="note-text">' + escapeHTML(note.note || '') + '</div>' +
+        '<div class="note-actions">' +
+          '<button onclick="openChangeNoteEditor(\'' + noteId + '\')">編集</button>' +
+          '<button class="danger" onclick="deleteChangeNote(\'' + noteId + '\')">削除</button>' +
+        '</div>' +
+      '</div>';
+    });
+  html += '</div>';
+  body.innerHTML = html;
+}
+
+function formatDateTime(isoString) {
+  const d = new Date(isoString);
+  if (Number.isNaN(d.getTime())) return isoString || '';
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0') + ' ' +
+    String(d.getHours()).padStart(2, '0') + ':' +
+    String(d.getMinutes()).padStart(2, '0');
+}
+
+function optionHTML(options, selected) {
+  return options.map(opt =>
+    '<option value="' + escapeHTML(opt.value) + '"' +
+    (opt.value === selected ? ' selected' : '') +
+    '>' + escapeHTML(opt.label) + '</option>'
+  ).join('');
+}
+
+function slotOptionHTML(selected) {
+  let html = '<option value=""' + (!selected ? ' selected' : '') + '>指定なし</option>';
+  Object.keys(CHANGE_NOTE_SLOT_LABELS).forEach(key => {
+    html += '<option value="' + escapeHTML(key) + '"' +
+      (key === selected ? ' selected' : '') +
+      '>' + escapeHTML(CHANGE_NOTE_SLOT_LABELS[key]) + '</option>';
+  });
+  return html;
+}
+
+function openChangeNoteEditor(noteId, preset) {
+  const existing = noteId ? changeNotes.find(note => note.id === noteId) : null;
+  const note = normalizeChangeNote(existing || preset || {
+    action: 'update',
+    target: {
+      kind: 'other',
+      recipeId: null,
+      name: '',
+      book: '',
+      page: '',
+      date: null,
+      slotName: null
+    },
+    field: 'other',
+    note: ''
+  });
+  document.getElementById('note-title').textContent = existing ? '変更メモを編集' : '変更メモを追加';
+  renderChangeNoteEditor(note, !!existing);
+  showChangeNotesModal();
+}
+
+function renderChangeNoteEditor(note, isEditing) {
+  const target = note.target || {};
+  const body = document.getElementById('note-body');
+  body.innerHTML = '<form class="note-form" onsubmit="saveChangeNoteForm(event)">' +
+    '<input type="hidden" id="note-id" value="' + escapeHTML(isEditing ? note.id : '') + '">' +
+    '<input type="hidden" id="note-created-at" value="' + escapeHTML(note.createdAt || '') + '">' +
+    '<input type="hidden" id="note-recipe-id" value="' + escapeHTML(target.recipeId || '') + '">' +
+    '<div class="note-form-row">' +
+      '<label>操作<select id="note-action">' + optionHTML(CHANGE_NOTE_ACTIONS, note.action) + '</select></label>' +
+      '<label>項目<select id="note-field">' + optionHTML(CHANGE_NOTE_FIELDS, note.field) + '</select></label>' +
+    '</div>' +
+    '<div class="note-form-row">' +
+      '<label>対象<select id="note-kind">' + optionHTML(CHANGE_NOTE_TARGET_KINDS, target.kind || 'other') + '</select></label>' +
+      '<label>献立枠<select id="note-slot-name">' + slotOptionHTML(target.slotName) + '</select></label>' +
+    '</div>' +
+    '<label>対象名<input type="text" id="note-target-name" value="' + escapeHTML(target.name || '') + '" placeholder="レシピ名など"></label>' +
+    '<div class="note-form-row">' +
+      '<label>レシピ本<input type="text" id="note-book" value="' + escapeHTML(target.book || '') + '"></label>' +
+      '<label>ページ<input type="text" id="note-page" value="' + escapeHTML(target.page || '') + '"></label>' +
+    '</div>' +
+    '<label>日付<input type="date" id="note-date" value="' + escapeHTML(target.date || '') + '"></label>' +
+    '<label>メモ<textarea id="note-text" required placeholder="例: 主な材料に「玉ねぎ」を追加。Notion更新時に反映したい。">' + escapeHTML(note.note || '') + '</textarea></label>' +
+    '<div class="note-form-actions">' +
+      '<button type="submit" class="save-btn">保存</button>' +
+      '<button type="button" onclick="openChangeNotesList()">キャンセル</button>' +
+    '</div>' +
+  '</form>';
+}
+
+function getChangeNoteFormValue(id) {
+  const el = document.getElementById(id);
+  return el ? el.value : '';
+}
+
+function saveChangeNoteForm(e) {
+  e.preventDefault();
+  const noteText = getChangeNoteFormValue('note-text').trim();
+  if (!noteText) {
+    alert('メモ本文を入力してください');
+    return;
+  }
+  const id = getChangeNoteFormValue('note-id');
+  const existing = id ? changeNotes.find(note => note.id === id) : null;
+  const action = getChangeNoteFormValue('note-action');
+  const kind = getChangeNoteFormValue('note-kind');
+  const field = getChangeNoteFormValue('note-field');
+  const slotName = getChangeNoteFormValue('note-slot-name');
+  const date = getChangeNoteFormValue('note-date');
+  const now = new Date().toISOString();
+  const normalized = normalizeChangeNote({
+    id: existing ? existing.id : makeChangeNoteId(),
+    createdAt: existing ? existing.createdAt : (getChangeNoteFormValue('note-created-at') || now),
+    updatedAt: now,
+    action: action,
+    target: {
+      kind: kind,
+      recipeId: getChangeNoteFormValue('note-recipe-id') || null,
+      name: getChangeNoteFormValue('note-target-name').trim(),
+      book: getChangeNoteFormValue('note-book').trim(),
+      page: getChangeNoteFormValue('note-page').trim(),
+      date: date || null,
+      slotName: slotName || null
+    },
+    field: field,
+    note: noteText
+  });
+
+  if (existing) {
+    changeNotes = changeNotes.map(note => note.id === existing.id ? normalized : note);
+  } else {
+    changeNotes.push(normalized);
+  }
+  saveChangeNotes();
+  openChangeNotesList();
+}
+
+function deleteChangeNote(id) {
+  const note = changeNotes.find(item => item.id === id);
+  if (!note) return;
+  if (!confirm('この変更メモを削除しますか？')) return;
+  changeNotes = changeNotes.filter(item => item.id !== id);
+  saveChangeNotes();
+  renderChangeNotesList();
+}
+
+function clearChangeNotes() {
+  if (!changeNotes.length) return;
+  if (!confirm('変更メモをすべて削除しますか？')) return;
+  changeNotes = [];
+  saveChangeNotes();
+  renderChangeNotesList();
+}
+
+function buildChangeNoteTargetFromSlot(idx, slotName) {
+  const entry = entries[idx];
+  const dinner = entry && normalizeDinner(entry.dinner);
+  const slot = dinner && dinner.slots ? dinner.slots[slotName] : null;
+  if (!entry || !slot || !slot.name) return null;
+  const recipe = slot.recipeId ? findRecipeById(slot.recipeId) : null;
+  return {
+    kind: slot.recipeId ? 'recipe' : (dinner.mealSetId ? 'mealset' : 'other'),
+    recipeId: slot.recipeId || null,
+    name: slot.name || '',
+    book: (recipe && recipe.book) || slot.book || '',
+    page: (recipe && recipe.page) || slot.page || '',
+    date: entry.date || null,
+    slotName: slotName
+  };
+}
+
+function openChangeNoteFromSlot(idx, slotName) {
+  const target = buildChangeNoteTargetFromSlot(idx, slotName);
+  if (!target) {
+    alert('メモする料理がありません');
+    return;
+  }
+  openChangeNoteEditor(null, {
+    action: 'update',
+    target: target,
+    field: target.kind === 'mealset' ? 'mealExample' : 'other',
+    note: ''
+  });
+}
+
+function downloadTextFile(filename, content, type) {
+  const blob = new Blob([content], { type: type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function exportChangeNotesJSON() {
+  if (!changeNotes.length) {
+    alert('書き出す変更メモがありません');
+    return;
+  }
+  const data = {
+    _type: 'meal_planner_change_notes',
+    _schemaVersion: 1,
+    _exported: new Date().toISOString(),
+    appVersion: APP_VERSION,
+    notes: changeNotes
+  };
+  downloadTextFile(
+    'レシピ変更メモ_' + todayISO().replace(/-/g, '') + '.json',
+    JSON.stringify(data, null, 2),
+    'application/json'
+  );
+}
+
+function markdownFence(text) {
+  return String(text || '').includes('```') ? '````' : '```';
+}
+
+function exportChangeNotesMarkdown() {
+  if (!changeNotes.length) {
+    alert('書き出す変更メモがありません');
+    return;
+  }
+  const lines = [
+    '# レシピ変更メモ',
+    '',
+    '- 書き出し: ' + new Date().toISOString(),
+    '- 件数: ' + changeNotes.length,
+    ''
+  ];
+  changeNotes.forEach((note, idx) => {
+    const target = note.target || {};
+    const fence = markdownFence(note.note);
+    lines.push(
+      '## ' + (idx + 1) + '. ' + changeNoteTitle(note),
+      '',
+      '- 操作: ' + getChangeNoteLabel(CHANGE_NOTE_ACTIONS, note.action),
+      '- 対象: ' + changeNoteTargetText(note),
+      '- 項目: ' + getChangeNoteLabel(CHANGE_NOTE_FIELDS, note.field),
+      '- レシピID: ' + (target.recipeId || ''),
+      '- 日付: ' + (target.date || ''),
+      '- 献立枠: ' + (target.slotName ? CHANGE_NOTE_SLOT_LABELS[target.slotName] : ''),
+      '- 作成: ' + note.createdAt,
+      '- 更新: ' + note.updatedAt,
+      '',
+      '本文:',
+      fence + 'text',
+      note.note || '',
+      fence,
+      ''
+    );
+  });
+  downloadTextFile(
+    'レシピ変更メモ_' + todayISO().replace(/-/g, '') + '.md',
+    lines.join('\n'),
+    'text/markdown'
+  );
 }
 
 /* ----- Settings Export / Import ----- */
@@ -2030,6 +2503,9 @@ function renderSlotRow(idx, dinner, slotName, label, canRedraw) {
   if (canRedraw) {
     html += '<button class="day-btn" onclick="redrawSlot(' + idx + ', \'' + slotName + '\')">再抽選</button>';
   }
+  if (slot && slot.name) {
+    html += '<button class="day-btn" onclick="openChangeNoteFromSlot(' + idx + ', \'' + slotName + '\')">メモ</button>';
+  }
   html += '<button class="day-btn" onclick="toggleSlotLock(' + idx + ', \'' + slotName + '\')">' +
     (isLocked ? '解除' : '固定') +
     '</button>';
@@ -2290,6 +2766,7 @@ saveRecipeData();
 renderRules();
 renderBreakfastPatterns();
 renderPriorityTags();
+renderChangeNoteButton();
 render();
 
 if (recipes.length) {
