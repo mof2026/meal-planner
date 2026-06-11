@@ -1,27 +1,24 @@
 <!DOCTYPE html>
-<html lang="ja"><head>
+<html lang="ja">
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>MEAL PLANNER</title>
+<title>献立プランナー</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="MEAL PLANNER">
-<link rel="apple-touch-icon" href="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='36' fill='%23F4F2ED'/%3E%3Crect x='30' y='30' width='120' height='120' fill='none' stroke='%2342444B' stroke-width='2'/%3E%3Cline x1='30' y1='70' x2='150' y2='70' stroke='%23D6D2C8' stroke-width='1'/%3E%3Cline x1='30' y1='100' x2='150' y2='100' stroke='%23D6D2C8' stroke-width='1'/%3E%3Cline x1='30' y1='130' x2='150' y2='130' stroke='%23D6D2C8' stroke-width='1'/%3E%3C/svg%3E">
+<meta name="apple-mobile-web-app-title" content="献立プランナー">
+<link rel="apple-touch-icon" href="icon-180.png">
 <style>
 :root {
-  /* Notebook palette D — 藍染手帳 */
-  --canvas: #C6C2BA;         /* desk / outer */
-  --bg: #F4F2ED;             /* page */
-  --surface: #EAE6DE;        /* hover / subtle fill */
-  --line: #D6D2C8;           /* page divider */
-  --section-line: #A7A39A;   /* fixed header/action divider */
-  --border: #42444B;         /* notebook frame */
-  --text: #2B2D33;
-  --text-mid: #6A6C72;
-  --text-light: #9A9B9F;
-  --text-faint: #B8B9BC;
-  --text-ghost: #AAABAE;
-  --accent: #2B2D33;
+  --bg: #FFFFFF;
+  --bg-soft: #F6F7F9;
+  --line: #E3E6EA;
+  --text: #1F2328;
+  --text-mid: #6B7280;
+  --text-faint: #9AA1A9;
+  --accent: #185FA5;
+  --accent-soft: #E6F1FB;
+  --warn: #993C1D;
   --font: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', sans-serif;
 }
 
@@ -31,475 +28,322 @@ body {
   font-family: var(--font);
   font-weight: 300;
   color: var(--text);
-  background: var(--canvas);
+  background: var(--bg);
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
-  padding: env(safe-area-inset-top) 12px env(safe-area-inset-bottom);
-  min-height: 100vh;
-  overflow-y: hidden;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
 }
 
-.app-shell {
-  min-width: 560px;
-  height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-  height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-  display: flex;
-  flex-direction: column;
-}
-
-/* Notebook page — bordered frame around the whole app */
-.page {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-top-color: var(--section-line);
-  min-width: 560px; max-width: 820px; margin: 0 auto 12px;
-  flex: 1 1 auto;
-  width: 100%;
-  min-height: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  box-shadow: 0 1px 0 rgba(0,0,0,.02);
-}
-@media (min-width: 768px) {
-  body { padding: env(safe-area-inset-top) 24px env(safe-area-inset-bottom); }
-}
+button { font-family: var(--font); cursor: pointer; }
+input, select, textarea { font-family: var(--font); }
 
 /* ===== Header ===== */
-.hd {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-bottom-color: var(--section-line);
-  min-width: 560px;
-  max-width: 820px;
-  margin: 12px auto 0;
-  flex: 0 0 auto;
-  width: 100%;
-  height: 80px;
-  padding: 0 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 1px 0 rgba(0,0,0,.02);
-}
-.hd h1 { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 300; color: var(--text-light); letter-spacing: .12em; line-height: 1; }
-.hd-a { display: flex; gap: 16px; }
-.hd-a button { background: none; border: none; color: var(--text-mid); cursor: pointer; padding: 6px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; }
-.hd-a button:hover, .hd-a button:active { color: var(--text); background: var(--surface); }
-.hd-a button svg { display: block; }
+.hd { padding: 20px 24px 12px; display: flex; justify-content: space-between; align-items: baseline; }
+.hd h1 { font-size: 14px; font-weight: 400; color: var(--text-mid); letter-spacing: .12em; }
+.hd-a { display: flex; gap: 18px; }
+.hd-a button { background: none; border: none; color: var(--text-mid); font-size: 13px; padding: 0; }
+.hd-a button .cnt { color: var(--accent); font-size: 11px; margin-left: 2px; }
 
-/* ===== Panels ===== */
-.pnl { display: none; padding: 16px 24px 20px; border-top: 1px solid var(--line); }
-.pnl.open {
-  display: block;
-  flex: 0 0 auto;
-  max-height: 42vh;
-  max-height: min(42dvh, 420px);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-.pnl-lb { font-size: 11px; font-weight: 300; color: var(--text-light); letter-spacing: .06em; margin-bottom: 10px; }
-.pnl-x { float: right; background: none; border: none; color: var(--text-faint); font-size: 16px; cursor: pointer; }
+/* ===== Week strip ===== */
+.week { display: flex; align-items: stretch; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.wk-nav { background: none; border: none; color: var(--text-faint); font-size: 16px; padding: 0 14px; }
+.wk-nav:active { color: var(--text); }
+.wk-days { flex: 1; display: grid; grid-template-columns: repeat(7, 1fr); }
+.wk-d { border-left: 1px solid var(--line); padding: 8px 8px 6px; min-width: 0; cursor: pointer; background: none; border-top: none; border-bottom: none; border-right: none; text-align: left; }
+.wk-d .wd { font-size: 11px; color: var(--text-faint); letter-spacing: .06em; }
+.wk-d .wd .tdy { color: var(--accent); margin-left: 3px; font-size: 9px; }
+.wk-d .wm { font-size: 12px; font-weight: 400; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wk-d .wm.empty { color: var(--text-faint); font-weight: 300; }
+.wk-d.sel { background: var(--bg-soft); box-shadow: inset 0 -2px 0 var(--accent); }
+.wk-d.done .wm { color: var(--text-faint); }
+.wk-d.done .wd::after { content: ' ✓'; color: var(--text-faint); font-size: 9px; }
 
-/* Day rules */
-.rg { display: grid; grid-template-columns: 28px 1fr; gap: 6px 12px; align-items: center; }
-.rg .rl { font-size: 12px; color: var(--text-light); }
-.rg select {
-  font-family: var(--font); font-size: 13px; font-weight: 300; color: var(--text);
+/* ===== Pantry bar ===== */
+.pan-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 8px 24px; border-bottom: 1px solid var(--line); }
+.pan-lb { font-size: 11px; color: var(--text-faint); letter-spacing: .12em; margin-right: 4px; }
+#pantry-chips { display: contents; }
+.pan-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; line-height: 1; padding: 4px 6px 4px 11px; border-radius: 999px;
+  border: 1px solid var(--line); color: var(--text); cursor: pointer; white-space: nowrap;
+}
+.pan-chip.partial { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.pan-chip .px { font-size: 11px; color: var(--text-faint); padding: 0 4px; }
+.pan-bar input {
+  border: none; outline: none; background: transparent;
+  font-size: 12px; font-weight: 300; color: var(--text); width: 150px; padding: 4px 0;
+}
+.pan-bar input::placeholder { color: var(--text-faint); }
+#pantry-sugg { display: contents; }
+.pan-ghost {
+  display: inline-flex; align-items: center;
+  font-size: 12px; line-height: 1; padding: 4px 11px; border-radius: 999px;
+  border: 1px dashed var(--line); color: var(--text-faint);
+  background: none; cursor: pointer; white-space: nowrap;
+}
+.pan-ghost:active { color: var(--text); border-color: var(--text-faint); }
+
+/* ===== Main layout ===== */
+.main { display: flex; flex-wrap: wrap; align-items: flex-start; }
+.day { flex: 3 1 380px; padding: 20px 24px 60px; min-width: 0; }
+.cand { flex: 2 1 300px; border-left: 1px solid var(--line); padding: 20px 24px 60px; min-width: 0; }
+
+/* ===== Day view ===== */
+.dv-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid var(--text); padding-bottom: 8px; }
+.dv-date { font-size: 18px; font-weight: 400; letter-spacing: .04em; }
+.dv-rule-wrap { position: relative; display: inline-flex; align-self: center; }
+.dv-rule-chip {
+  display: inline-flex; align-items: center;
+  font-size: 12px; line-height: 1; padding: 4px 12px; border-radius: 999px;
+  color: #37352F; background: #E3E2E0; white-space: nowrap;
+}
+.dv-rule-wrap select {
+  position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0;
+  border: none; -webkit-appearance: none; appearance: none; cursor: pointer;
+}
+.dv-rule-wrap select:disabled { pointer-events: none; }
+.dv-spacer { flex: 1; }
+.dv-confirm { background: none; border: 1px solid var(--line); border-radius: 999px; font-size: 11px; color: var(--text-mid); padding: 2px 12px; }
+.dv-confirm.on { color: var(--accent); border-color: var(--accent); }
+
+.sec-lb { font-size: 11px; color: var(--text-faint); letter-spacing: .2em; margin: 18px 0 2px; }
+.dv-main-name { font-size: 17px; font-weight: 400; line-height: 1.5; }
+.dv-ing { font-size: 13px; color: var(--text-mid); white-space: pre-wrap; line-height: 1.7; margin-top: 2px; }
+.dv-ref { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
+.dv-acts { display: flex; gap: 14px; margin-top: 6px; }
+.dv-acts button { background: none; border: none; font-size: 11px; color: var(--text-faint); padding: 0; }
+.dv-acts button:active { color: var(--text); }
+.dv-empty { font-size: 13px; color: var(--text-faint); padding: 4px 0; }
+
+.pan-hint { margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 6px; }
+.pan-hint-row { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-mid); padding: 2px 0; flex-wrap: wrap; }
+.pan-hint-row .pn { color: var(--accent); }
+.pan-hint-row button { background: none; border: 1px solid var(--line); border-radius: 999px; font-size: 10px; color: var(--text-mid); padding: 1px 10px; }
+
+.slot { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--line); padding: 6px 0; }
+.slot-role { font-size: 11px; color: var(--text-faint); white-space: nowrap; width: 32px; }
+.combo { position: relative; flex: 1; min-width: 0; }
+.combo input {
+  width: 100%; border: none; outline: none; background: transparent;
+  font-size: 14px; font-weight: 300; color: var(--text); padding: 2px 0;
+}
+.combo input::placeholder { color: var(--text-faint); }
+.combo-dd {
+  display: none; position: absolute; left: 0; right: 0; top: 100%; z-index: 50;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
+  max-height: 240px; overflow-y: auto; box-shadow: 0 4px 16px rgba(31,35,40,.08);
+}
+.combo-dd.open { display: block; }
+.combo-it { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; padding: 7px 12px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--bg-soft); }
+.combo-it:active { background: var(--bg-soft); }
+.combo-it .bdg { font-size: 10px; color: var(--accent); white-space: nowrap; }
+.combo-it .bdg.plain { color: var(--text-faint); }
+.slot-x { background: none; border: none; color: var(--text-faint); font-size: 13px; padding: 0 2px; }
+.slot-add { display: flex; gap: 16px; margin-top: 8px; }
+.slot-add button { background: none; border: none; font-size: 12px; color: var(--text-mid); padding: 0; }
+.slot-add button::before { content: '＋ '; color: var(--text-faint); }
+
+.dv-line-input {
+  width: 100%; border: none; border-bottom: 1px solid var(--line); outline: none;
+  background: transparent; font-size: 13px; font-weight: 300; color: var(--text); padding: 4px 0;
+}
+.dv-line-input::placeholder { color: var(--text-faint); }
+.memo-send { background: none; border: none; font-size: 11px; color: var(--text-faint); padding: 0; margin-top: 2px; }
+
+.dv-bf select {
+  font-size: 13px; font-weight: 300; color: var(--text);
   background: transparent; border: none; border-bottom: 1px solid var(--line);
-  border-radius: 0; padding: 4px 0; width: 100%; -webkit-appearance: none; appearance: none;
-}
-.rr {
-  margin-top: 10px; font-family: var(--font); font-size: 11px; font-weight: 300;
-  color: var(--text-faint); background: none; border: none; cursor: pointer;
-  text-decoration: underline; text-underline-offset: 2px;
+  -webkit-appearance: none; appearance: none; padding: 4px 0; width: 100%; max-width: 320px; outline: none;
 }
 
-/* Breakfast patterns */
-.bp-list { margin-bottom: 8px; }
-.bp-item { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) auto; align-items: center; gap: 8px; padding: 3px 0; border-bottom: 1px solid var(--line); }
-.bp-item input {
-  font-family: var(--font); font-size: 12px; font-weight: 300; color: var(--text);
-  border: none; border-bottom: 1px solid transparent; outline: none;
-  background: transparent; padding: 2px 0; min-width: 0;
+.dv-done-note { font-size: 12px; color: var(--text-faint); margin-top: 16px; }
+
+/* ===== Candidates panel ===== */
+.cp-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--text); padding-bottom: 8px; }
+.cp-title { font-size: 13px; font-weight: 400; letter-spacing: .08em; color: var(--text); }
+.cp-sub { font-size: 11px; color: var(--text-faint); }
+.cp-switch { background: none; border: none; font-size: 11px; color: var(--accent); padding: 0; }
+.cp-empty { font-size: 12px; color: var(--text-faint); padding: 16px 0; }
+
+.cd { border-bottom: 1px solid var(--line); padding: 12px 0; cursor: pointer; }
+.cd:active { background: var(--bg-soft); }
+.cd-top { display: flex; align-items: baseline; gap: 8px; }
+.cd-name { font-size: 15px; font-weight: 400; color: var(--text); flex: 1; min-width: 0; line-height: 1.5; }
+.cd-cat { font-size: 10px; color: var(--text-faint); white-space: nowrap; }
+.cd-why { font-size: 11px; color: var(--accent); line-height: 1.6; }
+.cd-why .neg { color: var(--text-faint); }
+.cd-ing { font-size: 12px; color: var(--text-mid); white-space: pre-wrap; line-height: 1.6; margin-top: 2px; }
+.cd-skip { background: none; border: none; font-size: 11px; color: var(--text-faint); padding: 0 2px; white-space: nowrap; }
+
+.cp-more { background: none; border: none; font-size: 12px; color: var(--text-mid); padding: 10px 0 0; }
+.cp-search {
+  width: 100%; border: none; border-bottom: 1px solid var(--line); outline: none;
+  background: transparent; font-size: 13px; font-weight: 300; color: var(--text);
+  padding: 6px 0; margin-top: 4px;
 }
-.bp-item input:focus { border-bottom-color: var(--line); }
-.bp-item .bp-ing { font-size: 10px; color: var(--text-mid); }
-.bp-item button { background: none; border: none; color: var(--text-faint); font-size: 12px; cursor: pointer; padding: 0; }
-.bp-add { display: flex; gap: 6px; align-items: center; }
-.bp-add input {
-  font-family: var(--font); font-size: 12px; font-weight: 300; color: var(--text);
-  border: none; border-bottom: 1px solid var(--line); outline: none;
-  background: transparent; padding: 2px 0; min-width: 0;
-}
-.bp-add button { font-family: var(--font); font-size: 11px; color: var(--text-light); background: none; border: none; cursor: pointer; }
+.cp-search::placeholder { color: var(--text-faint); }
+.cl { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; width: 100%; background: none; border: none; border-bottom: 1px solid var(--bg-soft); padding: 7px 0; text-align: left; }
+.cl:active { background: var(--bg-soft); }
+.cl .n { font-size: 13px; color: var(--text); min-width: 0; }
+.cl .w { font-size: 10px; color: var(--accent); white-space: nowrap; }
+.cl .w.plain { color: var(--text-faint); }
 
-/* CSV */
-.csv-d { display: block; position: relative; border-bottom: 1px dashed var(--line); padding: 16px 0; text-align: center; color: var(--text-light); font-size: 12px; cursor: pointer; }
-.csv-d input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-}
-.csv-s { margin-top: 6px; font-size: 11px; color: var(--text-light); }
-
-/* Sticky side tools */
-.side-tools {
-  min-width: 560px;
-  max-width: 820px;
-  flex: 0 0 auto;
-  width: 100%;
-  margin: -1px auto 0;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-top-color: var(--section-line);
-  border-bottom: none;
-  box-shadow: 0 1px 0 rgba(0,0,0,.02);
-}
-
-/* Priority */
-.pri { padding: 10px 24px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.pri-lb { font-size: 11px; color: var(--text-faint); white-space: nowrap; }
-#priority-tags { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.pri-tag { font-size: 12px; color: var(--text); border-bottom: 1px solid var(--line); padding: 1px 2px; display: inline-flex; align-items: center; gap: 4px; }
-.pri-tag button {
-  background: none; border: none; color: var(--text-faint);
-  font-size: 16px; line-height: 1; cursor: pointer;
-  width: 18px; height: 18px; padding: 0;
-}
-.pri input {
-  font-family: var(--font); font-size: 12px; font-weight: 300; color: var(--text);
-  border: none; border-bottom: 1px solid var(--line); outline: none;
-  background: transparent; width: 100px; padding: 2px 0;
-}
-.pri input::placeholder { color: var(--text-faint); }
-
-/* Action bar */
-.ab { padding: 10px 24px; display: flex; gap: 14px; align-items: center; border-top: 1px solid var(--line); flex-wrap: wrap; }
-.ab button { font-family: var(--font); font-size: 12px; font-weight: 300; color: var(--text-mid); background: none; border: none; cursor: pointer; padding: 4px 0; }
-.ab button:active { color: var(--text); }
-.ab .ab-primary { color: var(--accent); font-weight: 400; }
-
-/* ===== Timeline ===== */
-.tl {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 0 24px 120px;
-}
-.tl-empty { padding: 48px 0; text-align: center; color: var(--text-faint); font-size: 13px; }
-
-/* Day row: left 75% dinner, right 25% breakfast */
-.day-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(128px, 25%); border-top: 1px solid var(--line); min-height: 52px; }
-.day-row:last-child { border-bottom: 1px solid var(--line); }
-
-/* Past rows are faded automatically. */
-.day-row.past .day-left,
-.day-row.past .day-bf { color: var(--text-ghost); }
-.day-row.past .day-main { color: var(--text-ghost); font-weight: 300; }
-.day-row.past .day-sides { color: var(--text-faint); }
-.day-row.past .day-name { color: var(--text-faint); }
-.day-row.past .day-cat { color: var(--text-faint); }
-.day-row.past .ing-content { color: var(--text-faint); }
-.day-row.past .ing-toggle summary { color: var(--text-faint); }
-.day-row.past .ing-ref { color: var(--text-faint); }
-
-/* Skipped row */
-.day-row.skipped .day-main { color: var(--text-faint); font-style: italic; }
-.day-row.skipped .day-actions { opacity: 1 !important; }
-
-/* Locked row */
-.day-row.locked .day-name::after { content: ' ◎'; font-size: 9px; color: var(--text-light); }
-
-/* Left: dinner */
-.day-left { padding: 10px 12px 8px 0; border-right: 1px solid var(--line); min-width: 0; }
-.day-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1px; }
-.day-title { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
-.day-name { font-size: 11px; font-weight: 400; color: var(--text-mid); letter-spacing: .08em; }
-.day-date { font-size: 10px; color: var(--text-mid); margin-right: 5px; font-weight: 400; }
-.day-cat { font-size: 10px; font-weight: 300; color: var(--text-faint); }
-.day-cat-picker { position: relative; display: inline-flex; align-items: center; cursor: pointer; min-height: 22px; padding-left: 8px; }
-.day-cat-picker .day-cat.overridden { color: var(--text-mid); border-bottom: 1px solid var(--line); }
-.day-rule-select {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  opacity: 0; cursor: pointer; font-size: 16px;
-}
-.day-main { font-size: 15px; font-weight: 400; color: var(--text); line-height: 1.5; padding: 1px 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.day-main-text { flex: 1; min-width: 8em; }
-.day-sides { font-size: 12px; font-weight: 300; color: var(--text-mid); line-height: 1.6; }
-.slot-list { margin-top: 3px; display: grid; gap: 2px; }
-.slot-row { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: 6px; min-height: 25px; }
-.slot-label { font-size: 10px; color: var(--text-light); white-space: nowrap; }
-.slot-name { font-size: 13px; color: var(--text-mid); overflow-wrap: anywhere; }
-.slot-row.main .slot-name { font-size: 15px; font-weight: 400; color: var(--text); }
-.slot-actions { display: inline-flex; align-items: center; gap: 2px; }
-.slot-row.locked .slot-label::after { content: ' ◎'; font-size: 9px; color: var(--text-light); }
-
-/* Inline action buttons next to menu name */
-.day-inline-actions {
-  display: inline-flex; align-items: center; gap: 2px;
-  flex-shrink: 0; margin-left: auto;
-}
-.day-btn {
-  background: none; border: none;
-  font-family: var(--font); font-size: 11px; font-weight: 300;
-  color: var(--text-mid); cursor: pointer;
-  padding: 7px 9px; border-radius: 14px;
-  letter-spacing: .02em;
-  line-height: 1;
-  white-space: nowrap;
-  transition: background .12s, color .12s;
-}
-.day-btn:active { color: var(--text); background: var(--surface); }
-@media (hover: hover) {
-  .day-btn:hover { color: var(--text); background: var(--surface); }
-}
-
-/* Primary redraw — thin SVG icon */
-.day-btn.redraw {
-  color: var(--text-mid);
-  padding: 4px 8px;
-  line-height: 0;
-}
-.day-title .day-btn.redraw { padding: 3px 4px; }
-.day-btn.redraw svg { display: block; width: 22px; height: 22px; }
-.day-btn.redraw:active,
-.day-btn.redraw:hover { color: var(--text); background: var(--surface); }
-
-/* Destructive — slightly faded */
-.day-btn.danger { color: var(--text-faint); }
-
-/* Legacy day-actions row (used on skipped rows) */
-.day-actions { display: flex; gap: 2px; margin-top: 2px; flex-wrap: wrap; margin-left: -9px; }
-.day-actions button {
-  background: none; border: none;
-  font-family: var(--font); font-size: 11px; font-weight: 300;
-  color: var(--text-mid); cursor: pointer;
-  padding: 7px 9px; border-radius: 14px; letter-spacing: .02em; line-height: 1;
-}
-.day-actions button:active { color: var(--text); background: var(--surface); }
-@media (hover: hover) {
-  .day-actions button:hover { color: var(--text); background: var(--surface); }
-}
-
-/* Ingredients detail */
-.ing-toggle { margin-top: 4px; }
-.ing-toggle summary { font-size: 11px; color: var(--text-light); cursor: pointer; list-style: none; }
-.ing-toggle summary::before { content: '▸ '; font-size: 9px; }
-.ing-toggle[open] summary::before { content: '▾ '; }
-.ing-content { font-size: 12px; color: var(--text-mid); padding: 4px 0; white-space: pre-wrap; line-height: 1.7; }
-.ing-ref { font-size: 10px; color: var(--text-light); margin-top: 2px; }
-
-/* Edit area */
-.day-edit { display: none; margin-top: 4px; }
-.day-edit textarea {
-  font-family: var(--font); font-size: 14px; font-weight: 300; color: var(--text);
-  border: none; border-bottom: 1px solid var(--line); outline: none;
-  background: transparent; width: 100%; min-height: 56px; resize: none; padding: 4px 0; line-height: 1.6;
-}
-.day-edit-actions { display: flex; gap: 14px; margin-top: 4px; }
-.day-edit-actions button {
-  font-family: var(--font); font-size: 11px; font-weight: 300;
-  background: none; border: none; cursor: pointer; padding: 0; color: var(--text-light);
-}
-.day-edit-actions .save-btn { color: var(--text); }
-
-/* Right: breakfast */
-.day-bf { padding: 10px 0 8px 10px; font-size: 12px; color: var(--text-mid); display: flex; flex-direction: column; position: relative; min-width: 0; overflow: hidden; }
-.day-bf-label { font-size: 9px; color: var(--text-faint); letter-spacing: .04em; margin-bottom: 2px; }
-.day-bf select {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  opacity: 0; cursor: pointer;
-  font-family: var(--font); font-size: 16px; /* 16px: iOS Safari zoom防止（透明でも有効） */
-  background: transparent; border: none; -webkit-appearance: none; appearance: none;
-  padding: 0; outline: none;
-}
-.day-bf-text { font-size: 12px; color: var(--text-mid); white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; }
-.day-row.past .day-bf-text { color: var(--text-faint); }
-
-/* Modal */
-.overlay { display: none; position: fixed; inset: 0; background: rgba(90,85,78,.2); z-index: 100; }
+/* ===== Modals ===== */
+.overlay { display: none; position: fixed; inset: 0; background: rgba(31,35,40,.25); z-index: 100; }
 .overlay.open { display: flex; align-items: flex-end; }
 .modal {
-  background: var(--bg); width: 100%; max-height: 85vh;
-  border-radius: 12px 12px 0 0; overflow-y: auto; padding: 24px; -webkit-overflow-scrolling: touch;
+  background: var(--bg); width: 100%; max-height: 88vh;
+  border-radius: 14px 14px 0 0; overflow-y: auto; padding: 24px; -webkit-overflow-scrolling: touch;
 }
-.modal-title { font-size: 13px; font-weight: 300; color: var(--text-light); letter-spacing: .06em; margin-bottom: 16px; }
-.modal-close { float: right; background: none; border: none; font-size: 16px; color: var(--text-faint); cursor: pointer; }
-.shop-day { border-top: 1px solid var(--line); padding: 10px 0; }
-.shop-day h3 { font-size: 11px; font-weight: 300; color: var(--text-faint); margin-bottom: 4px; letter-spacing: .06em; }
-.shop-day pre { font-family: var(--font); font-size: 12px; font-weight: 300; color: var(--text); white-space: pre-wrap; line-height: 1.7; }
-.note-toolbar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
-.note-toolbar button,
-.note-actions button,
-.note-form-actions button {
-  font-family: var(--font); font-size: 11px; font-weight: 300;
-  color: var(--text-mid); background: none; border: none; cursor: pointer;
-  text-decoration: underline; text-underline-offset: 2px;
+.modal-title { font-size: 13px; font-weight: 400; color: var(--text-mid); letter-spacing: .08em; margin-bottom: 14px; }
+.modal-close { float: right; background: none; border: none; font-size: 16px; color: var(--text-faint); }
+.m-sec { margin-bottom: 26px; }
+.m-lb { font-size: 11px; color: var(--text-faint); letter-spacing: .1em; margin-bottom: 8px; }
+
+.pt-add { display: flex; gap: 10px; margin-top: 10px; align-items: center; }
+.pt-add input {
+  flex: 1; border: none; border-bottom: 1px solid var(--line); outline: none;
+  background: transparent; font-size: 13px; font-weight: 300; padding: 4px 0;
 }
-.note-toolbar .danger,
-.note-actions .danger { color: var(--text-faint); }
-.note-empty { color: var(--text-faint); font-size: 13px; padding: 20px 0; }
-.note-list { display: grid; gap: 12px; }
-.note-item { border-top: 1px solid var(--line); padding-top: 10px; }
-.note-item-title { font-size: 13px; color: var(--text); line-height: 1.5; overflow-wrap: anywhere; }
-.note-meta { font-size: 10px; color: var(--text-light); line-height: 1.6; margin-top: 2px; }
-.note-text { font-size: 12px; color: var(--text-mid); white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; margin-top: 6px; }
-.note-actions { display: flex; gap: 12px; margin-top: 8px; }
-.note-form { display: grid; gap: 10px; }
-.note-form label { display: grid; gap: 4px; font-size: 10px; color: var(--text-light); letter-spacing: .04em; }
-.note-form input,
-.note-form select,
-.note-form textarea {
-  font-family: var(--font); font-size: 13px; font-weight: 300; color: var(--text);
+.pt-add button { background: none; border: none; font-size: 12px; color: var(--accent); padding: 0; white-space: nowrap; }
+
+.mm-row { display: flex; align-items: baseline; gap: 10px; border-bottom: 1px solid var(--line); padding: 7px 0; }
+.mm-chk { background: none; border: 1px solid var(--line); border-radius: 4px; width: 18px; height: 18px; flex-shrink: 0; align-self: center; font-size: 11px; color: var(--accent); line-height: 1; }
+.mm-body { flex: 1; min-width: 0; }
+.mm-text { font-size: 13px; }
+.mm-text.done { color: var(--text-faint); text-decoration: line-through; }
+.mm-meta { font-size: 10px; color: var(--text-faint); }
+.mm-x { background: none; border: none; color: var(--text-faint); font-size: 13px; }
+.mm-add { display: flex; gap: 10px; margin-top: 10px; }
+.mm-add input {
+  flex: 1; border: none; border-bottom: 1px solid var(--line); outline: none;
+  background: transparent; font-size: 13px; font-weight: 300; padding: 4px 0;
+}
+.mm-add button { background: none; border: none; font-size: 12px; color: var(--accent); padding: 0; white-space: nowrap; }
+.mm-copy { background: none; border: 1px solid var(--line); border-radius: 999px; font-size: 11px; color: var(--text-mid); padding: 2px 14px; margin-top: 14px; }
+
+.rg { display: grid; grid-template-columns: 28px 1fr; gap: 6px 14px; align-items: center; }
+.rg .rl { font-size: 12px; color: var(--text-faint); }
+.rg select {
+  font-size: 13px; font-weight: 300; color: var(--text);
   background: transparent; border: none; border-bottom: 1px solid var(--line);
-  border-radius: 0; outline: none; padding: 3px 0; min-width: 0;
+  border-radius: 0; padding: 4px 0; width: 100%; -webkit-appearance: none; appearance: none; outline: none;
 }
-.note-form textarea { min-height: 96px; resize: vertical; line-height: 1.7; }
-.note-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.note-form-actions { display: flex; gap: 14px; margin-top: 4px; }
-.note-form-actions .save-btn { color: var(--text); }
+.lnk { background: none; border: none; font-size: 11px; color: var(--text-faint); text-decoration: underline; text-underline-offset: 2px; padding: 0; margin-top: 10px; }
+
+.bp-row { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--line); padding: 4px 0; }
+.bp-row input { border: none; outline: none; background: transparent; font-weight: 300; color: var(--text); padding: 2px 0; min-width: 0; }
+.bp-row .b-n { flex: 2; font-size: 13px; }
+.bp-row .b-i { flex: 3; font-size: 12px; color: var(--text-mid); }
+.bp-row button { background: none; border: none; color: var(--text-faint); font-size: 12px; padding: 0; }
+
+.csv-d { border: 1px dashed var(--line); border-radius: 8px; padding: 16px; text-align: center; color: var(--text-mid); font-size: 12px; cursor: pointer; }
+.csv-d input { display: none; }
+.csv-s { margin-top: 6px; font-size: 11px; color: var(--text-faint); }
+
+.bk-row { display: flex; gap: 16px; }
+.bk-row button { background: none; border: 1px solid var(--line); border-radius: 999px; font-size: 11px; color: var(--text-mid); padding: 2px 14px; }
 
 @media (min-width: 768px) {
-  .modal { max-width: 560px; margin: 0 auto; border-radius: 12px; }
+  .modal { max-width: 560px; margin: 0 auto; border-radius: 14px; }
   .overlay.open { align-items: center; justify-content: center; }
-
-  /* Wide screen: larger text for tablet readability */
-  .hd h1 { font-size: 15px; }
-  .hd-a button { font-size: 18px; }
-  .pnl-lb { font-size: 13px; }
-  .rg .rl { font-size: 14px; }
-  .rg select { font-size: 15px; }
-  .bp-item input { font-size: 14px; }
-  .bp-item .bp-ing { font-size: 12px; }
-  .bp-add input { font-size: 14px; }
-  .csv-d { font-size: 14px; }
-  .pri-lb { font-size: 13px; }
-  .pri-tag { font-size: 14px; }
-  .pri input { font-size: 14px; }
-  .ab button { font-size: 14px; }
-  .tl-empty { font-size: 15px; }
-  .day-name { font-size: 13px; }
-  .day-date { font-size: 12px; }
-  .day-cat { font-size: 12px; }
-  .day-main { font-size: 18px; }
-  .day-sides { font-size: 14px; }
-  .slot-label { font-size: 12px; }
-  .slot-name { font-size: 15px; }
-  .slot-row.main .slot-name { font-size: 18px; }
-  .day-actions button { font-size: 12px; }
-  .ing-toggle summary { font-size: 13px; }
-  .ing-content { font-size: 14px; }
-  .ing-ref { font-size: 12px; }
-  .day-edit textarea { font-size: 16px; }
-  .day-bf { font-size: 14px; }
-  .day-bf-label { font-size: 11px; }
-  .day-bf select { font-size: 16px; /* 透明だがiOS zoom防止のため維持 */ }
-  .day-bf-text { font-size: 14px; }
-  .shop-day h3 { font-size: 13px; }
-  .shop-day pre { font-size: 14px; }
+}
+@media (max-width: 720px) {
+  .cand { border-left: none; border-top: 1px solid var(--line); }
+  .wk-d .wm { font-size: 11px; }
+}
+@media (min-width: 1000px) {
+  .dv-date { font-size: 20px; }
+  .dv-main-name { font-size: 19px; }
+  .dv-ing { font-size: 14px; }
+  .combo input { font-size: 15px; }
+  .cd-name { font-size: 15px; }
+  .cd-why { font-size: 12px; }
+  .wk-d .wm { font-size: 13px; }
+  .wk-d .wd { font-size: 12px; }
 }
 </style>
 </head>
 <body>
 
-
-
-<div class="app-shell">
 <div class="hd">
-  <h1>MEAL PLANNER</h1>
+  <h1>献立プランナー</h1>
   <div class="hd-a">
-    <button onclick="togglePanel('panel-import')" title="インポート" aria-label="インポート">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v13"></path><path d="M6 11l6 6 6-6"></path><path d="M5 20h14"></path></svg>
-    </button>
-    <button onclick="togglePanel('panel-settings')" title="設定" aria-label="設定">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-    </button>
+    <button onclick="openModal('memo')">Notionメモ<span class="cnt" id="memo-count"></span></button>
+    <button onclick="openModal('settings')">設定</button>
   </div>
 </div>
 
-<aside class="side-tools" aria-label="献立操作">
-  <div class="pri">
-    <span class="pri-lb">使い切り食材</span>
-    <span id="priority-tags"></span>
-    <input type="text" id="priority-input" placeholder="入力…" onkeydown="handlePriorityKey(event)">
-  </div>
+<nav class="week">
+  <button class="wk-nav" onclick="moveWeek(-1)">‹</button>
+  <div class="wk-days" id="week-strip"></div>
+  <button class="wk-nav" onclick="moveWeek(1)">›</button>
+</nav>
 
-  <div class="ab">
-    <button class="ab-primary" onclick="addDays(7)">＋7日分追加</button>
-    <button class="ab-primary" onclick="addDays(1)">＋1日</button>
-    <button onclick="lotteryDrafts()">抽選</button>
-    <button onclick="exportMealPlan()">献立保存</button>
-    <button onclick="openShoppingList()">買い物リスト</button>
-    <button id="change-notes-button" onclick="openChangeNotesList()">変更メモ</button>
-    <button onclick="resetAll()">リセット</button>
-  </div>
-</aside>
-
-<div class="page">
-<div id="panel-settings" class="pnl">
-  <button class="pnl-x" onclick="togglePanel('panel-settings')">✕</button>
-  <div class="pnl-lb">曜日ルール</div>
-  <div class="rg" id="rules-grid"></div>
-  <button class="rr" onclick="resetRules()">デフォルトに戻す</button>
-  <div style="margin-top:20px">
-    <div class="pnl-lb">朝食パターン</div>
-    <div class="bp-list" id="bp-list"></div>
-    <div class="bp-add">
-      <input type="text" id="bp-name-input" placeholder="メニュー名…" style="flex:2">
-      <input type="text" id="bp-ing-input" placeholder="材料（任意）…" style="flex:3">
-      <button onclick="addBreakfastPattern()">追加</button>
-    </div>
-  </div>
-  <div style="margin-top:20px">
-    <div class="pnl-lb">設定データ（朝食パターン・曜日ルール・優先食材）</div>
-    <div style="display:flex;gap:12px;margin-top:8px">
-      <button class="rr" style="margin:0" onclick="exportSettings()">書き出し</button>
-      <button class="rr" style="margin:0" onclick="document.getElementById('settings-file').click()">読み込み</button>
-      <input type="file" id="settings-file" accept=".json" style="display:none">
-    </div>
-  </div>
+<div class="pan-bar">
+  <span class="pan-lb">在庫</span>
+  <span id="pantry-chips"></span>
+  <input type="text" id="pantry-inline" placeholder="＋使い切りたい食材…"
+         onkeydown="if(event.key==='Enter')addPantryInline()">
+  <span id="pantry-sugg"></span>
 </div>
 
-<div id="panel-import" class="pnl">
-  <button class="pnl-x" onclick="togglePanel('panel-import')">✕</button>
-  <div class="pnl-lb">CSVインポート</div>
-  <label class="csv-d" id="csv-drop">
-    タップしてCSVを選択
-    <input type="file" id="csv-file" accept=".csv">
-  </label>
-  <div class="csv-s" id="csv-status"></div>
-  <div style="margin-top:20px">
-    <div class="pnl-lb">保存した献立</div>
-    <div style="display:flex;gap:12px;margin-top:8px">
-      <button class="rr" style="margin:0" onclick="document.getElementById('plan-file').click()">読み込み</button>
-      <input type="file" id="plan-file" accept=".json" style="display:none">
-    </div>
-  </div>
-</div>
+<main class="main">
+  <section class="day" id="day-view"></section>
+  <aside class="cand" id="cand-panel"></aside>
+</main>
 
-<div class="tl" id="timeline"></div>
-</div>
-</div>
-
-<div class="overlay" id="shop-overlay" onclick="closeShoppingList(event)">
+<div class="overlay" id="ov-memo" onclick="closeModal(event,'memo')">
   <div class="modal" onclick="event.stopPropagation()">
-    <button class="modal-close" onclick="closeShoppingList()">✕</button>
-    <div class="modal-title">買い物リスト</div>
-    <div id="shop-body"></div>
+    <button class="modal-close" onclick="closeModal(null,'memo')">✕</button>
+    <div class="modal-title">Notionに反映したいことメモ</div>
+    <div id="memo-list"></div>
+    <div class="mm-add">
+      <input type="text" id="memo-input" placeholder="メモ…" onkeydown="if(event.key==='Enter')addMemo()">
+      <button onclick="addMemo()">追加</button>
+    </div>
+    <button class="mm-copy" onclick="copyMemos()">未処理メモをコピー</button>
   </div>
 </div>
 
-<div class="overlay" id="note-overlay" onclick="closeChangeNotes(event)">
+<div class="overlay" id="ov-settings" onclick="closeModal(event,'settings')">
   <div class="modal" onclick="event.stopPropagation()">
-    <button class="modal-close" onclick="closeChangeNotes()">✕</button>
-    <div class="modal-title" id="note-title">変更メモ</div>
-    <div id="note-body"></div>
+    <button class="modal-close" onclick="closeModal(null,'settings')">✕</button>
+    <div class="modal-title">設定</div>
+
+    <div class="m-sec">
+      <div class="m-lb">レシピCSV</div>
+      <div class="csv-d" onclick="document.getElementById('csv-file').click()">
+        タップしてCSVを選択
+        <input type="file" id="csv-file" accept=".csv">
+      </div>
+      <div class="csv-s" id="csv-status"></div>
+    </div>
+
+    <div class="m-sec">
+      <div class="m-lb">曜日ルール</div>
+      <div class="rg" id="rules-grid"></div>
+      <button class="lnk" onclick="resetRules()">デフォルトに戻す</button>
+    </div>
+
+    <div class="m-sec">
+      <div class="m-lb">朝食パターン（タップで編集）</div>
+      <div id="bp-list"></div>
+      <div class="pt-add">
+        <input type="text" id="bp-name-input" placeholder="メニュー名…" style="flex:2">
+        <input type="text" id="bp-ing-input" placeholder="材料（任意）…" style="flex:3">
+        <button onclick="addBreakfastPattern()">追加</button>
+      </div>
+    </div>
+
+    <div class="m-sec">
+      <div class="m-lb">バックアップ（全データ）</div>
+      <div class="bk-row">
+        <button onclick="exportBackup()">書き出し</button>
+        <button onclick="document.getElementById('backup-file').click()">読み込み</button>
+        <input type="file" id="backup-file" accept=".json" style="display:none">
+      </div>
+    </div>
   </div>
 </div>
 
@@ -507,31 +351,57 @@ body {
 'use strict';
 
 /* ============================================================
-   VERSION — keep localStorage and migrate schemas in place
+   VERSION
    ============================================================ */
 
-const APP_VERSION = '8';
-if (localStorage.getItem('mp_version') !== APP_VERSION) {
-  localStorage.setItem('mp_version', APP_VERSION);
+/* localStorageが使えない環境（サンドボックス内プレビュー等）ではメモリ保存で動かす */
+const LS = (() => {
+  try {
+    const t = globalThis.localStorage;
+    t.setItem('mp2_ping', '1');
+    t.removeItem('mp2_ping');
+    return t;
+  } catch {
+    const mem = {};
+    return {
+      _memory: true,
+      getItem: k => Object.prototype.hasOwnProperty.call(mem, k) ? mem[k] : null,
+      setItem: (k, v) => { mem[k] = String(v); },
+      removeItem: k => { delete mem[k]; },
+      key: i => Object.keys(mem)[i] || null,
+      get length() { return Object.keys(mem).length; }
+    };
+  }
+})();
+
+const APP_VERSION = '1';
+if (LS.getItem('mp2_version') !== APP_VERSION) {
+  const stale = [];
+  for (let i = 0; i < LS.length; i++) {
+    const k = LS.key(i);
+    if (k && k.startsWith('mp2_')) stale.push(k);
+  }
+  stale.forEach(k => LS.removeItem(k));
+  LS.setItem('mp2_version', APP_VERSION);
 }
 
 /* ============================================================
-   DATA LAYER
+   STORAGE
    ============================================================ */
 
 const Storage = {
   get(key) {
     try {
-      const raw = localStorage.getItem('mp_' + key);
+      const raw = LS.getItem('mp2_' + key);
       return raw ? JSON.parse(raw) : null;
     } catch { return null; }
   },
   _saveWarned: false,
   set(key, value) {
     try {
-      localStorage.setItem('mp_' + key, JSON.stringify(value));
+      LS.setItem('mp2_' + key, JSON.stringify(value));
     } catch (e) {
-      console.warn('localStorage save failed:', key, e);
+      console.warn('storage save failed:', key, e);
       if (!this._saveWarned) {
         this._saveWarned = true;
         alert('データの保存に失敗しました。ストレージの容量が不足している可能性があります。');
@@ -540,10 +410,10 @@ const Storage = {
   }
 };
 
-/**
- * Parse CSV text into array of objects.
- * Handles BOM, CRLF, quoted fields with escaped quotes.
- */
+/* ============================================================
+   CSV
+   ============================================================ */
+
 function parseCSV(text) {
   if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
   text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
@@ -560,17 +430,9 @@ function parseCSV(text) {
         pos++;
         while (pos < len) {
           if (text[pos] === '"') {
-            if (pos + 1 < len && text[pos + 1] === '"') {
-              value += '"';
-              pos += 2;
-            } else {
-              pos++;
-              break;
-            }
-          } else {
-            value += text[pos];
-            pos++;
-          }
+            if (pos + 1 < len && text[pos + 1] === '"') { value += '"'; pos += 2; }
+            else { pos++; break; }
+          } else { value += text[pos]; pos++; }
         }
         if (pos < len && text[pos] === ',') { pos++; }
         else if (pos < len && text[pos] === '\n') { pos++; row.push(value); break; }
@@ -590,9 +452,7 @@ function parseCSV(text) {
       }
       row.push(value);
     }
-    if (row.length > 0 && !(row.length === 1 && row[0] === '')) {
-      rows.push(row);
-    }
+    if (row.length > 0 && !(row.length === 1 && row[0] === '')) rows.push(row);
   }
 
   if (rows.length < 2) return [];
@@ -604,251 +464,138 @@ function parseCSV(text) {
   });
 }
 
-function stableHash(text) {
-  let hash = 2166136261;
-  for (let i = 0; i < text.length; i++) {
-    hash ^= text.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
+const KEY_INGREDIENTS = [
+  '鮭','鯖','さば','ぶり','鰤','たら','鱈','鯛','さわら','あじ','かつお','まぐろ',
+  '鶏','とり','チキン','豚','ぶた','牛','ビーフ',
+  '豆腐','厚揚げ','生揚げ','えび','エビ','海老','いか','イカ',
+  'ハンバーグ','ツナ','しらす','サーモン','めかじき','かじき',
+  'さんま','いわし','ほたて','あさり','合いびき','合挽き','ひき肉'
+];
+
+function extractKeyIngredients(text) {
+  return KEY_INGREDIENTS.filter(k => text.includes(k));
+}
+
+function splitList(str) {
+  const out = [];
+  let buf = '', depth = 0;
+  for (const ch of String(str || '')) {
+    if (ch === '（' || ch === '(') depth++;
+    else if (ch === '）' || ch === ')') depth = Math.max(0, depth - 1);
+    if (depth === 0 && (ch === ',' || ch === '、' || ch === '，')) { out.push(buf); buf = ''; }
+    else buf += ch;
   }
-  return (hash >>> 0).toString(36);
+  out.push(buf);
+  return out.map(s => s.trim()).filter(Boolean);
 }
 
-function normalizeIdPart(text) {
-  return String(text || '').trim().replace(/\s+/g, '-');
-}
-
-function makeRecipeId(row, fallbackIndex) {
-  const manualKey = normalizeIdPart(row['手動キー']);
-  if (manualKey) return 'manual:' + manualKey;
-  const base = [
-    row['名前'] || '',
-    row['レシピ本'] || '',
-    row['ページ'] || '',
-    fallbackIndex
-  ].join('|');
-  return 'recipe:' + stableHash(base);
-}
-
-function isSoupName(text) {
-  return /(スープ|みそ汁|味噌汁|汁|ポタージュ|お吸い物|すまし汁|酸辣湯)/.test(text || '');
-}
-
-function splitMealExample(rawText) {
-  const text = String(rawText || '').replace(/[＊*].*$/, '');
-  const parts = [];
-  let current = '';
-  let parenDepth = 0;
-
-  function pushCurrent() {
-    const cleaned = cleanMealPart(current);
-    if (cleaned) parts.push(cleaned);
-    current = '';
+function parenDepth(s) {
+  let d = 0;
+  for (const ch of String(s)) {
+    if (ch === '（' || ch === '(') d++;
+    else if (ch === '）' || ch === ')') d = Math.max(0, d - 1);
   }
+  return d;
+}
 
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (ch === '(' || ch === '（') parenDepth++;
-    if (ch === ')' || ch === '）') parenDepth = Math.max(0, parenDepth - 1);
-
-    if (parenDepth === 0 && /[、,，／/]/.test(ch)) {
-      pushCurrent();
-      continue;
+/** 旧バージョンが括弧内で誤分割したリストを繋ぎ直す（保存済みデータの自動修復用） */
+function repairSplitList(arr) {
+  const out = [];
+  for (const item of arr) {
+    if (out.length && parenDepth(out[out.length - 1]) > 0) {
+      out[out.length - 1] += '、' + item;
+    } else {
+      out.push(item);
     }
-    if (parenDepth === 0 && (ch === '　' || ch === '\n')) {
-      pushCurrent();
-      continue;
-    }
-    if (parenDepth === 0 && ch === ' ' && /[）)]/.test(text[i - 1] || '')) {
-      pushCurrent();
-      while (text[i + 1] === ' ') i++;
-      continue;
-    }
-    if (parenDepth === 0 && ch === ' ' && text[i + 1] === ' ') {
-      pushCurrent();
-      while (text[i + 1] === ' ') i++;
-      continue;
-    }
-    current += ch;
   }
-  pushCurrent();
-  return parts.flatMap(splitEmbeddedSoupPart);
+  return out;
 }
 
-function splitEmbeddedSoupPart(part) {
-  if (!part || !isSoupName(part)) return part ? [part] : [];
-  const soupStart = findEmbeddedSoupStart(part);
-  if (soupStart <= 0) return [part];
-  const before = cleanMealPart(part.slice(0, soupStart));
-  const after = cleanMealPart(part.slice(soupStart));
-  return [before, after].filter(Boolean);
-}
-
-function findEmbeddedSoupStart(text) {
-  const soupWords = [
-    'コンソメスープ',
-    '中華スープ',
-    '和風スープ',
-    'コーンスープ',
-    'ポタージュ',
-    'みそ汁',
-    '味噌汁',
-    'お吸い物',
-    'すまし汁',
-    '酸辣湯',
-    'スープ'
-  ];
-  let best = -1;
-  soupWords.forEach(word => {
-    const idx = text.indexOf(word);
-    if (idx <= 0) return;
-    const rawBefore = text.slice(0, idx);
-    const before = rawBefore.trim();
-    if (!/[）)]$/.test(before) && !/\s$/.test(rawBefore)) return;
-    if (best === -1 || idx < best) best = idx;
-  });
-  return best;
-}
-
-function cleanMealPart(text) {
-  return String(text || '')
-    .replace(/[＊*].*$/, '')
-    .replace(/^[\s、,，／/]+|[\s、,，／/]+$/g, '')
-    .trim();
-}
-
-function isBalancedParens(text) {
-  const open = (text.match(/[（(]/g) || []).length;
-  const close = (text.match(/[）)]/g) || []).length;
-  return open === close;
-}
-
-function isUsableMealPart(text) {
-  if (!text) return false;
-  if (!isBalancedParens(text)) return false;
-  if (/^[）)]|[（(]$/.test(text)) return false;
-  if (text.length <= 1) return false;
-  return true;
-}
-
-function findRecipeIdByName(name, allRecipes) {
-  if (!name) return null;
-  const exact = allRecipes.find(r => r.name === name);
-  if (exact) return exact.id;
-  const loose = allRecipes.find(r => name.includes(r.name) || r.name.includes(name));
-  return loose ? loose.id : null;
-}
-
-function createMealSetFromExample(recipe, exampleNo, rawText, allRecipes) {
-  const parts = splitMealExample(rawText);
-  const slots = { side1: null, side2: null, soup: null };
-  parts.forEach(part => {
-    if (!isUsableMealPart(part)) return;
-    const slot = {
-      name: part,
-      recipeId: findRecipeIdByName(part, allRecipes),
-      rawText: part
-    };
-    if (isSoupName(part)) {
-      if (!slots.soup) slots.soup = slot;
-    } else if (!slots.side1) {
-      slots.side1 = slot;
-    } else if (!slots.side2) {
-      slots.side2 = slot;
-    }
-  });
-
-  return {
-    id: 'mealset:' + recipe.id + ':' + exampleNo + ':' + stableHash(rawText),
-    sourceRecipeId: recipe.id,
-    sourceExampleNo: exampleNo,
-    rawText: rawText,
-    main: { recipeId: recipe.id, name: recipe.name },
-    slots: slots
-  };
-}
-
-function buildCandidatesFromMealSets(allMealSets) {
-  const sideCandidates = [];
-  const soupCandidates = [];
-  const seenSide = new Set();
-  const seenSoup = new Set();
-
-  allMealSets.forEach(ms => {
-    ['side1', 'side2'].forEach(slotName => {
-      const slot = ms.slots && ms.slots[slotName];
-      if (!slot || !slot.name) return;
-      if (!isUsableMealPart(slot.name)) return;
-      const key = slot.name + '|' + (slot.recipeId || '');
-      if (seenSide.has(key)) return;
-      seenSide.add(key);
-      sideCandidates.push({
-        id: 'side:' + stableHash(key),
-        name: slot.name,
-        recipeId: slot.recipeId || null,
-        rawText: slot.rawText || slot.name,
-        sourceMealSetId: ms.id,
-        sourceRecipeId: ms.sourceRecipeId
-      });
-    });
-    const soup = ms.slots && ms.slots.soup;
-    if (!soup || !soup.name) return;
-    if (!isUsableMealPart(soup.name)) return;
-    const key = soup.name + '|' + (soup.recipeId || '');
-    if (seenSoup.has(key)) return;
-    seenSoup.add(key);
-    soupCandidates.push({
-      id: 'soup:' + stableHash(key),
-      name: soup.name,
-      recipeId: soup.recipeId || null,
-      rawText: soup.rawText || soup.name,
-      sourceMealSetId: ms.id,
-      sourceRecipeId: ms.sourceRecipeId
-    });
-  });
-
-  return { sideCandidates, soupCandidates };
-}
-
-/** Convert parsed CSV rows to first-class recipe and virtual MealSet data. */
+/** Notion CSV → recipe objects. 「役割」列の有無で新旧フォーマットを判別する。 */
 function csvToRecipes(parsed) {
-  const rows = parsed.filter(row => (row['名前'] || '').trim());
-  const recipes = rows.map((row, idx) => ({
-    id: makeRecipeId(row, idx),
-    name: row['名前'] || '',
-    category: row['カテゴリ'] || '',
-    tag: row['タグ'] || '',
-    ingredients: row['主な材料'] || '',
-    book: row['レシピ本'] || '',
-    page: row['ページ'] || '',
-    hotcookKey: row['ホットクックキー'] || '',
-    manualKey: row['手動キー'] || ''
-  }));
+  if (!parsed.length) return [];
+  const isNew = '役割' in parsed[0];
 
-  const mealSets = [];
-  rows.forEach((row, idx) => {
-    const recipe = recipes[idx];
-    [1, 2, 3, 4].forEach(no => {
-      const rawText = (row['献立例' + no] || '').trim();
-      if (!rawText) return;
-      mealSets.push(createMealSetFromExample(recipe, no, rawText, recipes));
-    });
-  });
-
-  const candidates = buildCandidatesFromMealSets(mealSets);
-  return {
-    recipes: recipes,
-    mealSets: mealSets,
-    sideCandidates: candidates.sideCandidates,
-    soupCandidates: candidates.soupCandidates
-  };
+  return parsed.map((row, idx) => {
+    const name = row['名前'] || '';
+    if (isNew) {
+      const ingredients = row['材料と分量'] || row['主な材料'] || '';
+      let keys = splitList(row['主要食材']);
+      if (!keys.length) keys = extractKeyIngredients(name + ' ' + ingredients);
+      return {
+        id: idx,
+        name,
+        role: row['役割'] || '主菜',
+        category: row['カテゴリ'] || '',
+        tags: splitList(row['タグ']),
+        keyIngredients: keys,
+        ingredients,
+        pairings: splitList(row['合う副菜']),
+        book: row['レシピ本'] || '',
+        page: row['ページ'] || '',
+        hotcookKey: row['ホットクックキー'] || ''
+      };
+    }
+    const ingredients = row['主な材料'] || '';
+    return {
+      id: idx,
+      name,
+      role: (row['カテゴリ'] === '副菜') ? '副菜' : '主菜',
+      category: row['カテゴリ'] || '',
+      tags: splitList(row['タグ']),
+      keyIngredients: extractKeyIngredients(name + ' ' + ingredients),
+      ingredients,
+      pairings: [row['献立例1'], row['献立例2'], row['献立例3'], row['献立例4']]
+        .filter(s => s && s.trim()).map(s => s.trim()),
+      book: row['レシピ本'] || '',
+      page: row['ページ'] || '',
+      hotcookKey: row['ホットクックキー'] || ''
+    };
+  }).filter(r => r.name);
 }
 
 /* ============================================================
-   LOGIC LAYER
+   DATES
    ============================================================ */
 
 const DAY_OF_WEEK = ['日', '月', '火', '水', '木', '金', '土'];
-const DAY_OF_WEEK_EN = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
+function toLocalDate(iso) {
+  const p = iso.split('-').map(Number);
+  return new Date(p[0], p[1] - 1, p[2]);
+}
+function toISOString(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
+}
+function todayISO() { return toISOString(new Date()); }
+function addDaysISO(iso, n) {
+  const d = toLocalDate(iso);
+  d.setDate(d.getDate() + n);
+  return toISOString(d);
+}
+function getDayName(iso) { return DAY_OF_WEEK[toLocalDate(iso).getDay()]; }
+function formatDate(iso) {
+  const d = toLocalDate(iso);
+  return (d.getMonth() + 1) + '月' + d.getDate() + '日';
+}
+function formatDateShort(iso) {
+  const d = toLocalDate(iso);
+  return (d.getMonth() + 1) + '/' + d.getDate();
+}
+function diffDays(isoA, isoB) {
+  return Math.round((toLocalDate(isoA) - toLocalDate(isoB)) / 86400000);
+}
+function mondayOf(iso) {
+  const d = toLocalDate(iso);
+  const shift = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - shift);
+  return toISOString(d);
+}
+
+/* ============================================================
+   RULES
+   ============================================================ */
 
 const DEFAULT_RULES = {
   '月': { type: 'cat', value: '魚' },
@@ -861,759 +608,1018 @@ const DEFAULT_RULES = {
 };
 
 const RULE_OPTIONS = [
-  { label: '魚',     type: 'cat', value: '魚' },
-  { label: '肉',     type: 'cat', value: '肉' },
-  { label: '大豆',   type: 'cat', value: '大豆（貝・えびも含む）' },
+  { label: '魚', type: 'cat', value: '魚' },
+  { label: '肉', type: 'cat', value: '肉' },
+  { label: '大豆', type: 'cat', value: '大豆（貝・えびも含む）' },
   { label: '一品料理', type: 'cat', value: '一品料理' },
-  { label: '休日夜', type: 'tag', value: '休日夜' }
+  { label: '休日夜', type: 'tag', value: '休日夜' },
+  { label: 'すべて', type: 'all', value: '' }
 ];
 
-const KEY_INGREDIENTS = [
-  '鮭','鯖','さば','ぶり','鰤','たら','鱈','鯛','さわら','あじ','かつお','まぐろ',
-  '鶏','とり','チキン','豚','ぶた','牛','ビーフ',
-  '豆腐','厚揚げ','生揚げ','えび','エビ','海老','いか','イカ',
-  'ハンバーグ','ツナ','しらす','サーモン','めかじき','かじき',
-  'さんま','いわし','ほたて','あさり','合いびき','合挽き','ひき肉'
-];
+function getRules() { return Storage.get('rules') || { ...DEFAULT_RULES }; }
 
-const INGREDIENT_GROUPS = {
-  青菜: ['小松菜', '青梗菜', 'チンゲンサイ', 'ほうれん草', '水菜', 'タアサイ'],
-  きのこ: ['しめじ', 'えのき', '舞茸', 'まいたけ', 'エリンギ', 'しいたけ', 'マッシュルーム']
+function ruleForDate(iso) {
+  const day = days[iso];
+  if (day && day.ruleOverride) return day.ruleOverride;
+  return getRules()[getDayName(iso)] || DEFAULT_RULES[getDayName(iso)];
+}
+
+function ruleLabel(rule) {
+  const opt = RULE_OPTIONS.find(o => o.type === rule.type && o.value === rule.value);
+  return opt ? opt.label : (rule.value || 'すべて');
+}
+
+/* Notionのセレクト色（ライトモード）。チップの配色をNotion側の設定と揃える */
+const NOTION_COLORS = {
+  default: '#E3E2E0', gray: '#E3E2E0', brown: '#EEE0DA', orange: '#FADEC9',
+  yellow: '#FDECC8', green: '#DBEDDB', blue: '#D3E5EF', purple: '#E8DEEE',
+  pink: '#F5E0E9', red: '#FFE2DD'
+};
+/* Notionデータベースの現在の色設定を反映（変えたらここも合わせる） */
+const RULE_CHIP_COLORS = {
+  '肉': 'orange', '魚': 'blue', '大豆（貝・えびも含む）': 'yellow',
+  '一品料理': 'default', '休日夜': 'default'
 };
 
-const DEFAULT_BREAKFAST_PATTERNS = [
+function ruleChipColor(rule) {
+  const key = RULE_CHIP_COLORS[rule.value] || 'default';
+  return NOTION_COLORS[key] || NOTION_COLORS.default;
+}
+
+function filterByRule(list, rule) {
+  const mains = list.filter(r => r.role === '主菜');
+  if (rule.type === 'all') return mains;
+  if (rule.type === 'tag') return mains.filter(r => r.tags.includes(rule.value));
+  return mains.filter(r => r.category === rule.value && !r.tags.includes('休日夜'));
+}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+
+let recipes = Storage.get('recipes') || [];
+let days = Storage.get('days') || {};
+let pantry = Storage.get('pantry') || [];
+let panHist = Storage.get('panHist') || {};   // 食材名 → {n: 追加回数, last: 最終日}
+let memos = Storage.get('memos') || [];
+let breakfastPatterns = Storage.get('bpats') || [
   { name: 'パン・ヨーグルト・果物', ingredients: '食パン、ヨーグルト、果物' },
   { name: 'グラノーラ・バナナ・ヨーグルト', ingredients: 'グラノーラ、バナナ、ヨーグルト' }
 ];
 
-const CHANGE_NOTE_ACTIONS = [
-  { value: 'add', label: '追加' },
-  { value: 'update', label: '修正' },
-  { value: 'delete', label: '削除' },
-  { value: 'other', label: 'その他' }
-];
+let selectedDate = todayISO();
+let weekStart = mondayOf(selectedDate);
+const excluded = {};            // date → Set(候補から外したレシピ名) 保存しない
+let panelShowsMain = true;      // 主菜決定後も「選び直す」で主菜候補に戻せる
+let panelShowAll = false;
+let panelQuery = '';
 
-const CHANGE_NOTE_TARGET_KINDS = [
-  { value: 'recipe', label: 'レシピ' },
-  { value: 'mealset', label: '献立例' },
-  { value: 'breakfast', label: '朝食' },
-  { value: 'rule', label: '曜日ルール' },
-  { value: 'other', label: 'その他' }
-];
+function saveDays() { Storage.set('days', days); }
+function savePantry() { Storage.set('pantry', pantry); }
+function saveMemos() { Storage.set('memos', memos); }
 
-const CHANGE_NOTE_FIELDS = [
-  { value: 'name', label: '名前' },
-  { value: 'category', label: 'カテゴリ' },
-  { value: 'tag', label: 'タグ' },
-  { value: 'ingredients', label: '主な材料' },
-  { value: 'mealExample', label: '献立例' },
-  { value: 'book', label: 'レシピ本' },
-  { value: 'page', label: 'ページ' },
-  { value: 'other', label: 'その他' }
-];
-
-const CHANGE_NOTE_SLOT_LABELS = {
-  main: '主菜',
-  side1: '副菜1',
-  side2: '副菜2',
-  soup: '汁物'
-};
-
-/* ----- Date helpers (local timezone safe) ----- */
-
-function toLocalDate(isoString) {
-  const parts = isoString.split('-').map(Number);
-  return new Date(parts[0], parts[1] - 1, parts[2]);
-}
-
-function toISOString(date) {
-  return date.getFullYear() + '-' +
-    String(date.getMonth() + 1).padStart(2, '0') + '-' +
-    String(date.getDate()).padStart(2, '0');
-}
-
-function todayISO() {
-  return toISOString(new Date());
-}
-
-function addDaysToISO(isoString, numDays) {
-  const d = toLocalDate(isoString);
-  d.setDate(d.getDate() + numDays);
-  return toISOString(d);
-}
-
-function getDayName(isoString) {
-  return DAY_OF_WEEK[toLocalDate(isoString).getDay()];
-}
-
-function getDayNameEN(isoString) {
-  return DAY_OF_WEEK_EN[toLocalDate(isoString).getDay()];
-}
-
-function formatDate(isoString) {
-  const d = toLocalDate(isoString);
-  return (d.getMonth() + 1) + '/' + d.getDate();
-}
-
-/* ----- Rule helpers ----- */
-
-function getRules() {
-  return Storage.get('rules') || { ...DEFAULT_RULES };
-}
-
-function normalizeRules(rawRules) {
-  const normalized = { ...DEFAULT_RULES };
-  if (!rawRules || typeof rawRules !== 'object' || Array.isArray(rawRules)) {
-    return normalized;
+function getDay(iso) {
+  if (!days[iso]) {
+    return {
+      date: iso, main: null, sides: [],
+      breakfast: breakfastPatterns.length ? breakfastPatterns[0].name : null,
+      arrangeMemo: '', ruleOverride: null, confirmed: false
+    };
   }
-  Object.keys(DEFAULT_RULES).forEach(day => {
-    if (isValidRule(rawRules[day])) {
-      normalized[day] = {
-        type: rawRules[day].type,
-        value: rawRules[day].value
-      };
-    }
-  });
-  return normalized;
+  return days[iso];
 }
 
-function getRuleForDay(dayName) {
-  const rules = normalizeRules(Storage.get('rules'));
-  return rules[dayName] || DEFAULT_RULES[dayName];
+function touchDay(iso) {
+  if (!days[iso]) days[iso] = getDay(iso);
+  return days[iso];
 }
 
-function isSameRule(a, b) {
-  return !!a && !!b && a.type === b.type && a.value === b.value;
-}
-
-function isValidRule(rule) {
-  return RULE_OPTIONS.some(opt => isSameRule(opt, rule));
-}
-
-function getRuleLabel(rule) {
-  const opt = RULE_OPTIONS.find(o => isSameRule(o, rule));
-  return opt ? opt.label : (rule ? rule.value : '');
-}
-
-function getEffectiveRule(entry) {
-  const baseRule = getRuleForDay(getDayName(entry.date));
-  return entry.ruleOverride && isValidRule(entry.ruleOverride)
-    ? entry.ruleOverride
-    : baseRule;
-}
-
-function isPrunableEntry(entry) {
-  const cutoff = addDaysToISO(todayISO(), -28);
-  return entry.date < cutoff;
-}
-
-function filterByRule(allRecipes, rule) {
-  if (rule.type === 'tag') {
-    return allRecipes.filter(r => r.tag.includes(rule.value));
-  }
-  return allRecipes.filter(r => r.category === rule.value && !r.tag.includes('休日夜'));
-}
-
-/* ----- Conflict detection ----- */
-
-function extractKeyIngredients(text) {
-  return KEY_INGREDIENTS.filter(k => text.includes(k));
-}
-
-function hasIngredientConflict(dinnerA, dinnerB) {
-  const mainA = getDinnerMain(dinnerA);
-  const mainB = getDinnerMain(dinnerB);
-  if (!mainA || !mainB || !mainA.ingredients || !mainB.ingredients) return false;
-  const keysA = extractKeyIngredients(mainA.ingredients);
-  const keysB = extractKeyIngredients(mainB.ingredients);
-  return keysA.some(a => keysB.some(b => a === b || a.includes(b) || b.includes(a)));
-}
-
-function expandPriorityTerms() {
-  const terms = new Set(priorities);
-  priorities.forEach(priority => {
-    Object.values(INGREDIENT_GROUPS).forEach(group => {
-      if (group.some(word => priority.includes(word) || word.includes(priority))) {
-        group.forEach(word => terms.add(word));
-      }
-    });
-  });
-  return Array.from(terms).filter(Boolean);
-}
-
-function recipePriorityText(recipe) {
-  const relatedMealSets = mealSets.filter(ms => String(ms.sourceRecipeId) === String(recipe.id));
-  return [
-    recipe.name,
-    recipe.ingredients,
-    relatedMealSets.map(ms => ms.rawText).join(' ')
-  ].join(' ');
-}
-
-function priorityScore(recipe) {
-  if (!priorities.length) return 0;
-  const text = recipePriorityText(recipe);
-  return expandPriorityTerms().reduce((score, term) => score + (text.includes(term) ? 1 : 0), 0);
-}
-
-function hasPriorityMatch(recipe) {
-  return priorityScore(recipe) > 0;
-}
-
-function weightedPick(candidates) {
-  if (!candidates.length) return null;
-  const weighted = [];
-  candidates.forEach(recipe => {
-    weighted.push(recipe);
-    const score = priorityScore(recipe);
-    for (let i = 0; i < Math.min(score, 4); i++) weighted.push(recipe);
-  });
-  return weighted[Math.floor(Math.random() * weighted.length)];
-}
-
-/* ----- Lottery ----- */
-
-function getRecentlyUsedNames() {
-  const cutoff = addDaysToISO(todayISO(), -14);
-  const names = [];
-  for (const entry of entries) {
-    const main = getDinnerMain(entry.dinner);
-    if (main && main.name && entry.date >= cutoff) {
-      names.push(main.name);
-    }
-  }
-  return names;
-}
-
-function chooseMainRecipeForEntry(idx) {
-  const entry = entries[idx];
-  const rule = getEffectiveRule(entry);
-  let candidates = filterByRule(recipes, rule);
-  if (!candidates.length) return null;
-
-  const usedNames = getRecentlyUsedNames();
-  const fresh = candidates.filter(r => !usedNames.includes(r.name) || hasPriorityMatch(r));
-  if (fresh.length) candidates = fresh;
-
-  const prevDinner = idx > 0 && entries[idx - 1].dinner
-    ? entries[idx - 1].dinner : null;
-  const nextDinner = idx < entries.length - 1 && entries[idx + 1].dinner
-    ? entries[idx + 1].dinner : null;
-  const noConflict = candidates.filter(r =>
-    hasPriorityMatch(r) ||
-    (
-      !hasIngredientConflict({ slots: { main: { ingredients: r.ingredients } }, schemaVersion: 2 }, prevDinner) &&
-      !hasIngredientConflict({ slots: { main: { ingredients: r.ingredients } }, schemaVersion: 2 }, nextDinner)
-    )
-  );
-  if (noConflict.length) candidates = noConflict;
-
-  if (priorities.length) {
-    const prioritized = candidates.filter(hasPriorityMatch);
-    if (prioritized.length && Math.random() < 0.72) {
-      candidates = prioritized;
-    }
-  }
-
-  return weightedPick(candidates);
-}
-
-function mealSetToDinner(recipe, mealSet, previousDinner) {
-  const prev = normalizeDinner(previousDinner);
-  const locks = prev ? { ...emptyDinnerLocks(), ...prev.locks } : emptyDinnerLocks();
-  const slots = emptyDinnerSlots();
-
-  slots.main = locks.main && prev && prev.slots.main ? prev.slots.main : makeSlotFromRecipe(recipe);
-  if (mealSet) {
-    ['side1', 'side2', 'soup'].forEach(slotName => {
-      slots[slotName] = locks[slotName] && prev && prev.slots[slotName]
-        ? prev.slots[slotName]
-        : makeSlotFromCandidate(mealSet.slots[slotName]);
-    });
-  }
-  if (!mealSet && prev) {
-    ['side1', 'side2', 'soup'].forEach(slotName => {
-      slots[slotName] = locks[slotName] ? prev.slots[slotName] : null;
-    });
-  }
-
+function mainSnapshot(rec) {
   return {
-    schemaVersion: 2,
-    parseVersion: 3,
-    origin: mealSet ? 'mealSet' : 'generated',
-    mealSetId: mealSet ? mealSet.id : null,
-    locks: locks,
-    slots: slots,
-    rawExample: mealSet ? mealSet.rawText : ''
+    name: rec.name, category: rec.category, ingredients: rec.ingredients,
+    keyIngredients: rec.keyIngredients, book: rec.book, page: rec.page,
+    hotcookKey: rec.hotcookKey
   };
 }
 
-function drawForEntry(idx) {
-  const previousDinner = normalizeDinner(entries[idx].dinner);
-  let picked = null;
-  if (previousDinner && previousDinner.locks.main && previousDinner.slots.main) {
-    picked = findRecipeById(previousDinner.slots.main.recipeId) || {
-      id: previousDinner.slots.main.recipeId,
-      name: previousDinner.slots.main.name,
-      ingredients: previousDinner.slots.main.ingredients || '',
-      book: previousDinner.slots.main.book || '',
-      page: previousDinner.slots.main.page || '',
-      category: previousDinner.slots.main.category || ''
-    };
-  } else {
-    picked = chooseMainRecipeForEntry(idx);
-  }
-  if (!picked) return previousDinner;
+function findRecipe(name) { return recipes.find(r => r.name === name) || null; }
 
-  const relatedMealSets = mealSets.filter(ms => String(ms.sourceRecipeId) === String(picked.id));
-  const mealSet = relatedMealSets.length
-    ? relatedMealSets[Math.floor(Math.random() * relatedMealSets.length)]
-    : null;
-  return mealSetToDinner(picked, mealSet, previousDinner);
+/* ============================================================
+   SCORING — 決定的・乱数なし。理由を文字列で返す
+   ============================================================ */
+
+function recipeMatchesPantryItem(rec, item) {
+  const n = item.name;
+  if (!n) return false;
+  return rec.name.includes(n) || rec.ingredients.includes(n) ||
+    rec.keyIngredients.some(k => k.includes(n) || n.includes(k));
+}
+
+/** 指定日以外で、その主菜を最後に作った（=配置した）日 */
+function lastMadeDate(name, excludeDate) {
+  let last = null;
+  const today = todayISO();
+  for (const [date, day] of Object.entries(days)) {
+    if (date === excludeDate) continue;
+    if (!day.main || day.main.name !== name) continue;
+    if (date > today && !day.confirmed) continue;
+    if (!last || date > last) last = date;
+  }
+  return last;
+}
+
+/** 指定日より未来にいる同名主菜（過去分は直近ペナルティ側で減点済み） */
+function plannedNearby(name, date, range) {
+  for (let i = 1; i <= range; i++) {
+    const d = addDaysISO(date, i);
+    const day = days[d];
+    if (day && day.main && day.main.name === name) return d;
+  }
+  return null;
+}
+
+function keyOverlap(keysA, keysB) {
+  return keysA.filter(a => keysB.some(b => a === b || a.includes(b) || b.includes(a)));
+}
+
+function scoreCandidate(rec, date) {
+  let score = 0;
+  const why = [];     // {text, neg}
+
+  for (const item of pantry) {
+    if (recipeMatchesPantryItem(rec, item)) {
+      score += item.state === 'partial' ? 80 : 60;
+      why.push({ text: item.name + (item.state === 'partial' ? '（残りあり）' : '') + 'が使える', neg: false });
+    }
+  }
+
+  const today = todayISO();
+  const last = lastMadeDate(rec.name, date);
+  if (last) {
+    const ago = diffDays(today, last);
+    if (ago >= 0 && ago <= 14) {
+      score -= 100;
+      why.push({ text: ago === 0 ? '今日の分に予定済み' : ago + '日前に作った', neg: true });
+    } else if (ago > 14) {
+      score += Math.min(ago, 90) * 0.5;
+      if (ago >= 21) why.push({ text: ago + '日ぶり', neg: false });
+    }
+  } else {
+    score += 25;
+  }
+
+  const planned = plannedNearby(rec.name, date, 10);
+  if (planned) {
+    score -= 100;
+    why.push({ text: formatDateShort(planned) + 'に予定済み', neg: true });
+  }
+
+  for (const offset of [-1, 1]) {
+    const d = addDaysISO(date, offset);
+    const other = days[d] && days[d].main;
+    if (other && other.keyIngredients) {
+      const overlap = keyOverlap(rec.keyIngredients, other.keyIngredients);
+      if (overlap.length) {
+        score -= 40;
+        why.push({ text: (offset < 0 ? '前日' : '翌日') + 'と' + overlap[0] + 'がかぶる', neg: true });
+      }
+    }
+  }
+
+  return { rec, score, why };
+}
+
+function mainCandidates(date) {
+  const rule = ruleForDate(date);
+  const pool = filterByRule(recipes, rule);
+  const ex = excluded[date] || new Set();
+  const scored = pool
+    .filter(r => !ex.has(r.name))
+    .map(r => scoreCandidate(r, date));
+  scored.sort((a, b) => b.score - a.score || a.rec.name.localeCompare(b.rec.name, 'ja'));
+  return scored;
+}
+
+/** 名前から副菜/汁物を推定（レシピ未登録の自由入力向け） */
+function guessSideRole(name) {
+  const rec = findRecipe(name);
+  if (rec && (rec.role === '副菜' || rec.role === '汁物')) return rec.role;
+  return /スープ|汁|ポタージュ|チャウダー|ミネストローネ/.test(name) ? '汁物' : '副菜';
+}
+
+/** 副菜・汁物の候補。合う副菜 → 過去の組み合わせ実績 → 全リストの順 */
+function sideSuggestions(mainName, query) {
+  const out = [];
+  const seen = new Set();
+  const q = (query || '').trim();
+  const push = (name, src, count) => {
+    if (!name || seen.has(name)) return;
+    if (q && !name.includes(q)) return;
+    seen.add(name);
+    const role = guessSideRole(name);
+    const badge = src === 'pairing' ? '相性◎・' + role
+      : src === 'history' ? '実績' + count + '回・' + role
+      : role;
+    out.push({ name, role, badge, plain: src === 'list' });
+  };
+
+  if (mainName) {
+    const rec = findRecipe(mainName);
+    if (rec) rec.pairings.forEach(p => push(p, 'pairing'));
+
+    const counts = {};
+    for (const day of Object.values(days)) {
+      if (!day.main || day.main.name !== mainName) continue;
+      for (const s of day.sides) {
+        if (s.name) counts[s.name] = (counts[s.name] || 0) + 1;
+      }
+    }
+    Object.entries(counts).sort((a, b) => b[1] - a[1])
+      .forEach(([name, n]) => push(name, 'history', n));
+  }
+
+  recipes.filter(r => r.role === '副菜' || r.role === '汁物')
+    .forEach(r => push(r.name, 'list'));
+  return out;
 }
 
 /* ============================================================
-   UI LAYER
+   HELPERS
    ============================================================ */
 
-/**
- * Escape string for safe use in both HTML content and attribute values.
- * Covers: & < > " '
- */
 function escapeHTML(str) {
   return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-function escapeJSString(str) {
-  return String(str)
-    .replace(/\\/g, '\\\\')
-    .replace(/'/g, "\\'")
-    .replace(/\r/g, '\\r')
-    .replace(/\n/g, '\\n');
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
 }
 
-function togglePanel(id) {
-  const panel = document.getElementById(id);
-  const willOpen = panel && !panel.classList.contains('open');
-  document.querySelectorAll('.pnl.open').forEach(openPanel => {
-    if (openPanel.id !== id) openPanel.classList.remove('open');
+/* ============================================================
+   WEEK STRIP
+   ============================================================ */
+
+function renderStrip() {
+  const strip = document.getElementById('week-strip');
+  strip.innerHTML = '';
+  const today = todayISO();
+  for (let i = 0; i < 7; i++) {
+    const date = addDaysISO(weekStart, i);
+    const day = days[date];
+    const btn = el('button', 'wk-d');
+    if (date === selectedDate) btn.classList.add('sel');
+    if (day && day.confirmed) btn.classList.add('done');
+
+    const wd = el('div', 'wd', getDayName(date) + ' ' + formatDateShort(date));
+    if (date === today) wd.appendChild(el('span', 'tdy', '今日'));
+    btn.appendChild(wd);
+
+    const mainName = day && day.main ? day.main.name : '';
+    const wm = el('div', 'wm' + (mainName ? '' : ' empty'), mainName || '—');
+    btn.appendChild(wm);
+
+    btn.addEventListener('click', () => selectDay(date));
+    strip.appendChild(btn);
+  }
+}
+
+function selectDay(date) {
+  selectedDate = date;
+  weekStart = mondayOf(date);
+  panelShowsMain = !getDay(date).main;
+  panelShowAll = false;
+  panelQuery = '';
+  renderAll();
+}
+
+function moveWeek(n) {
+  weekStart = addDaysISO(weekStart, n * 7);
+  selectedDate = weekStart;
+  panelShowsMain = !getDay(selectedDate).main;
+  panelShowAll = false;
+  panelQuery = '';
+  renderAll();
+}
+
+/* ============================================================
+   DAY VIEW
+   ============================================================ */
+
+function renderDay() {
+  const view = document.getElementById('day-view');
+  view.innerHTML = '';
+  const date = selectedDate;
+  const day = getDay(date);
+
+  // --- ヘッダ：日付・ルールチップ・確定 ---
+  const head = el('div', 'dv-head');
+  head.appendChild(el('span', 'dv-date', formatDate(date) + '（' + getDayName(date) + '）'));
+
+  const ruleSel = document.createElement('select');
+  const defRule = getRules()[getDayName(date)] || DEFAULT_RULES[getDayName(date)];
+  const defOpt = el('option', null, ruleLabel(defRule) + (day.ruleOverride ? '（既定）' : ''));
+  defOpt.value = '';
+  if (!day.ruleOverride) defOpt.selected = true;
+  ruleSel.appendChild(defOpt);
+  RULE_OPTIONS.forEach(opt => {
+    if (!day.ruleOverride && opt.type === defRule.type && opt.value === defRule.value) return;
+    const o = el('option', null, opt.label);
+    o.value = JSON.stringify({ type: opt.type, value: opt.value });
+    if (day.ruleOverride && day.ruleOverride.type === opt.type && day.ruleOverride.value === opt.value) o.selected = true;
+    ruleSel.appendChild(o);
   });
-  if (panel) panel.classList.toggle('open', willOpen);
-}
+  ruleSel.disabled = day.confirmed;
+  ruleSel.addEventListener('change', () => {
+    const d = touchDay(date);
+    d.ruleOverride = ruleSel.value ? JSON.parse(ruleSel.value) : null;
+    saveDays();
+    panelShowAll = false;
+    renderAll();
+  });
+  const effRule = day.ruleOverride || defRule;
+  const ruleWrap = el('div', 'dv-rule-wrap');
+  const chip = el('span', 'dv-rule-chip', ruleLabel(effRule));
+  chip.style.background = ruleChipColor(effRule);
+  ruleWrap.appendChild(chip);
+  ruleWrap.appendChild(ruleSel);
+  head.appendChild(ruleWrap);
 
-/* ----- State and migrations ----- */
+  head.appendChild(el('span', 'dv-spacer'));
 
-function normalizeStoredRecipe(recipe, idx) {
-  if (!recipe || typeof recipe !== 'object') return null;
-  const name = typeof recipe.name === 'string' ? recipe.name.trim() : '';
-  if (!name) return null;
-  return {
-    id: recipe.id != null ? String(recipe.id) : makeRecipeId({ '名前': name, 'レシピ本': recipe.book || '', 'ページ': recipe.page || '' }, idx),
-    name: name,
-    category: typeof recipe.category === 'string' ? recipe.category : '',
-    tag: typeof recipe.tag === 'string' ? recipe.tag : '',
-    ingredients: typeof recipe.ingredients === 'string' ? recipe.ingredients : '',
-    book: typeof recipe.book === 'string' ? recipe.book : '',
-    page: typeof recipe.page === 'string' ? recipe.page : '',
-    hotcookKey: typeof recipe.hotcookKey === 'string' ? recipe.hotcookKey : '',
-    manualKey: typeof recipe.manualKey === 'string' ? recipe.manualKey : '',
-    sideOptions: Array.isArray(recipe.sideOptions) ? recipe.sideOptions.filter(Boolean) : []
-  };
-}
+  const confirmBtn = el('button', 'dv-confirm' + (day.confirmed ? ' on' : ''),
+    day.confirmed ? '✓ 確定済み（編集に戻す）' : '確定する');
+  confirmBtn.addEventListener('click', () => {
+    const d = touchDay(date);
+    d.confirmed = !d.confirmed;
+    saveDays();
+    renderAll();
+  });
+  head.appendChild(confirmBtn);
+  view.appendChild(head);
 
-function normalizeStoredMealSet(mealSet) {
-  if (!mealSet || typeof mealSet !== 'object' || !mealSet.rawText) return null;
-  const slots = mealSet.slots && typeof mealSet.slots === 'object' ? mealSet.slots : {};
-  return {
-    id: String(mealSet.id || ('mealset:' + stableHash(mealSet.rawText))),
-    sourceRecipeId: mealSet.sourceRecipeId != null ? String(mealSet.sourceRecipeId) : null,
-    sourceExampleNo: Number(mealSet.sourceExampleNo) || 0,
-    rawText: String(mealSet.rawText),
-    main: mealSet.main || { recipeId: mealSet.sourceRecipeId || null, name: '' },
-    slots: {
-      side1: normalizeLooseSlot(slots.side1),
-      side2: normalizeLooseSlot(slots.side2),
-      soup: normalizeLooseSlot(slots.soup)
-    }
-  };
-}
+  const locked = day.confirmed;
 
-function normalizeLooseSlot(slot) {
-  if (!slot) return null;
-  if (typeof slot === 'string') return { name: slot, recipeId: null, rawText: slot };
-  if (typeof slot !== 'object' || !slot.name) return null;
-  return {
-    name: String(slot.name),
-    recipeId: slot.recipeId != null ? String(slot.recipeId) : null,
-    rawText: String(slot.rawText || slot.name)
-  };
-}
+  // --- 主菜 ---
+  view.appendChild(el('div', 'sec-lb', '主菜'));
+  if (day.main) {
+    view.appendChild(el('div', 'dv-main-name', day.main.name));
+    if (day.main.ingredients) view.appendChild(el('div', 'dv-ing', day.main.ingredients));
+    const refParts = [];
+    if (day.main.book) refParts.push(day.main.book + (day.main.page ? ' p.' + day.main.page : ''));
+    if (day.main.hotcookKey) refParts.push('ホットクック: ' + day.main.hotcookKey);
+    if (refParts.length) view.appendChild(el('div', 'dv-ref', refParts.join('　')));
 
-function loadRecipeDataFromStorage() {
-  const storedRecipes = (Storage.get('recs') || [])
-    .map(normalizeStoredRecipe)
-    .filter(Boolean);
-  let storedMealSets = (Storage.get('mealSets') || [])
-    .map(normalizeStoredMealSet)
-    .filter(Boolean);
-
-  if (!storedMealSets.length && storedRecipes.some(r => r.sideOptions && r.sideOptions.length)) {
-    storedRecipes.forEach(recipe => {
-      recipe.sideOptions.forEach((rawText, idx) => {
-        storedMealSets.push(createMealSetFromExample(recipe, idx + 1, rawText, storedRecipes));
+    if (!locked) {
+      const acts = el('div', 'dv-acts');
+      const reBtn = el('button', null, '選び直す');
+      reBtn.addEventListener('click', () => { panelShowsMain = true; panelShowAll = false; renderPanel(); });
+      acts.appendChild(reBtn);
+      const clrBtn = el('button', null, 'クリア');
+      clrBtn.addEventListener('click', () => {
+        touchDay(date).main = null;
+        saveDays();
+        panelShowsMain = true;
+        renderAll();
       });
-    });
-  } else if (storedMealSets.length) {
-    storedMealSets = storedMealSets.map(mealSet => {
-      const recipe = storedRecipes.find(r => String(r.id) === String(mealSet.sourceRecipeId));
-      return recipe
-        ? createMealSetFromExample(recipe, mealSet.sourceExampleNo || 1, mealSet.rawText, storedRecipes)
-        : mealSet;
-    });
-  }
+      acts.appendChild(clrBtn);
+      const memoBtn = el('button', null, 'Notionメモ');
+      memoBtn.addEventListener('click', () => promptMemo(day.main.name));
+      acts.appendChild(memoBtn);
+      view.appendChild(acts);
 
-  storedRecipes.forEach(recipe => { delete recipe.sideOptions; });
-  const candidates = buildCandidatesFromMealSets(storedMealSets);
-  return {
-    recipes: storedRecipes,
-    mealSets: storedMealSets,
-    sideCandidates: candidates.sideCandidates,
-    soupCandidates: candidates.soupCandidates
-  };
-}
-
-function saveRecipeData() {
-  Storage.set('recs', recipes);
-  Storage.set('mealSets', mealSets);
-  Storage.set('sideCandidates', sideCandidates);
-  Storage.set('soupCandidates', soupCandidates);
-}
-
-function emptyDinnerLocks() {
-  return { main: false, side1: false, side2: false, soup: false };
-}
-
-function emptyDinnerSlots() {
-  return { main: null, side1: null, side2: null, soup: null };
-}
-
-function makeSlotFromRecipe(recipe) {
-  if (!recipe) return null;
-  return {
-    name: recipe.name,
-    recipeId: recipe.id,
-    ingredients: recipe.ingredients || '',
-    book: recipe.book || '',
-    page: recipe.page || '',
-    category: recipe.category || ''
-  };
-}
-
-function makeSlotFromCandidate(candidate) {
-  if (!candidate || !candidate.name) return null;
-  const recipe = candidate.recipeId ? findRecipeById(candidate.recipeId) : null;
-  return {
-    name: candidate.name,
-    recipeId: candidate.recipeId || null,
-    rawText: candidate.rawText || candidate.name,
-    ingredients: recipe ? recipe.ingredients : '',
-    book: recipe ? recipe.book : '',
-    page: recipe ? recipe.page : '',
-    category: recipe ? recipe.category : ''
-  };
-}
-
-function findRecipeById(recipeId) {
-  if (recipeId == null) return null;
-  return recipes.find(r => String(r.id) === String(recipeId)) || null;
-}
-
-function isDinnerV2(dinner) {
-  return !!dinner && dinner.schemaVersion === 2 && dinner.slots && typeof dinner.slots === 'object';
-}
-
-function normalizeDinner(dinner) {
-  if (!dinner || typeof dinner !== 'object' || Array.isArray(dinner)) return null;
-  if (isDinnerV2(dinner)) {
-    const locks = { ...emptyDinnerLocks(), ...(dinner.locks || {}) };
-    const slots = { ...emptyDinnerSlots() };
-    ['main', 'side1', 'side2', 'soup'].forEach(slotName => {
-      slots[slotName] = normalizeLooseSlot(dinner.slots[slotName]);
-      if (slotName === 'main' && slots[slotName]) {
-        const recipe = slots[slotName].recipeId ? findRecipeById(slots[slotName].recipeId) : null;
-        slots[slotName] = {
-          ...slots[slotName],
-          ingredients: typeof dinner.slots[slotName].ingredients === 'string' ? dinner.slots[slotName].ingredients : (recipe ? recipe.ingredients : ''),
-          book: typeof dinner.slots[slotName].book === 'string' ? dinner.slots[slotName].book : (recipe ? recipe.book : ''),
-          page: typeof dinner.slots[slotName].page === 'string' ? dinner.slots[slotName].page : (recipe ? recipe.page : ''),
-          category: typeof dinner.slots[slotName].category === 'string' ? dinner.slots[slotName].category : (recipe ? recipe.category : '')
-        };
-      }
-    });
-    const shouldReparseMealSet = dinner.origin === 'mealSet' &&
-      dinner.parseVersion !== 3 &&
-      typeof dinner.rawExample === 'string' &&
-      dinner.rawExample &&
-      slots.main &&
-      slots.main.recipeId;
-    if (shouldReparseMealSet) {
-      const recipe = findRecipeById(slots.main.recipeId);
-      if (recipe) {
-        const reparsed = createMealSetFromExample(recipe, 1, dinner.rawExample, recipes);
-        ['side1', 'side2', 'soup'].forEach(slotName => {
-          if (!locks[slotName]) slots[slotName] = makeSlotFromCandidate(reparsed.slots[slotName]);
+      // 在庫マッチ → 使い切り確認
+      const matched = pantry.filter(item => day.main.ingredients &&
+        recipeMatchesPantryItem({ name: day.main.name, ingredients: day.main.ingredients,
+          keyIngredients: day.main.keyIngredients || [] }, item));
+      if (matched.length) {
+        const hint = el('div', 'pan-hint');
+        matched.forEach(item => {
+          const row = el('div', 'pan-hint-row');
+          row.appendChild(el('span', 'pn',
+            '在庫: ' + item.name + (item.state === 'partial' ? '（残りあり）' : '')));
+          const useUp = el('button', null, '使い切った');
+          useUp.addEventListener('click', () => {
+            pantry = pantry.filter(p => p !== item);
+            savePantry();
+            renderAll();
+          });
+          row.appendChild(useUp);
+          if (item.state !== 'partial') {
+            const half = el('button', null, 'まだ残ってる');
+            half.addEventListener('click', () => {
+              item.state = 'partial';
+              savePantry();
+              renderAll();
+            });
+            row.appendChild(half);
+          }
+          hint.appendChild(row);
         });
+        view.appendChild(hint);
       }
     }
-    return {
-      schemaVersion: 2,
-      parseVersion: 3,
-      origin: dinner.origin || 'manual',
-      mealSetId: dinner.mealSetId || null,
-      locks: locks,
-      slots: slots,
-      rawExample: typeof dinner.rawExample === 'string' ? dinner.rawExample : ''
-    };
+  } else if (locked) {
+    view.appendChild(el('div', 'dv-empty', '—'));
+  } else {
+    view.appendChild(el('div', 'dv-empty', '右の候補から選ぶか、ここに直接入力 ↓'));
+    const combo = buildCombo({
+      placeholder: '主菜を入力…',
+      suggest: q => {
+        const ex = excluded[date] || new Set();
+        return recipes.filter(r => r.role === '主菜' && !ex.has(r.name))
+          .filter(r => !q || r.name.includes(q))
+          .slice(0, 30)
+          .map(r => ({ name: r.name, badge: r.category, plain: true }));
+      },
+      commit: name => { if (name) setMain(date, name); }
+    });
+    combo.classList.add('slot');
+    view.appendChild(combo);
   }
 
-  const name = typeof dinner.name === 'string' ? dinner.name.trim() : '';
-  if (!name) return null;
-  const recipe = recipes.find(r => r.name === name);
-  const slots = emptyDinnerSlots();
-  slots.main = recipe ? makeSlotFromRecipe(recipe) : {
-    name: name,
-    recipeId: null,
-    ingredients: typeof dinner.ingredients === 'string' ? dinner.ingredients : '',
-    book: typeof dinner.book === 'string' ? dinner.book : '',
-    page: typeof dinner.page === 'string' ? dinner.page : '',
-    category: typeof dinner.category === 'string' ? dinner.category : ''
-  };
-  const sides = typeof dinner.sides === 'string' ? dinner.sides.trim() : '';
-  if (sides) {
-    const parts = splitMealExample(sides);
-    if (parts.length) {
-      const first = parts[0];
-      slots[isSoupName(first) ? 'soup' : 'side1'] = {
-        name: first,
-        recipeId: findRecipeIdByName(first, recipes),
-        rawText: first
-      };
+  // --- 副菜・汁物 ---
+  view.appendChild(el('div', 'sec-lb', '副菜・汁物'));
+  if (!day.sides.length && locked) view.appendChild(el('div', 'dv-empty', '—'));
+  day.sides.forEach((side, idx) => {
+    const row = el('div', 'slot');
+    row.appendChild(el('span', 'slot-role', side.role));
+    if (locked) {
+      row.appendChild(el('span', null, side.name || '—'));
     } else {
-      slots.side1 = { name: sides, recipeId: null, rawText: sides };
+      const combo = buildCombo({
+        value: side.name,
+        placeholder: side.role + 'を入力…',
+        suggest: q => sideSuggestions(day.main ? day.main.name : '', q).slice(0, 30),
+        commit: (name, item) => {
+          const d = touchDay(date);
+          const slot = d.sides[idx];
+          if (!slot) return;
+          let changed = false;
+          if (slot.name !== name) { slot.name = name; changed = true; }
+          const newRole = item ? item.role : (name ? guessSideRole(name) : slot.role);
+          if (name && newRole && slot.role !== newRole) { slot.role = newRole; changed = true; }
+          if (changed) {
+            saveDays();
+            renderStrip();
+            if (slot.role !== side.role) renderDay();
+          }
+        }
+      });
+      row.appendChild(combo);
+      const x = el('button', 'slot-x', '✕');
+      x.addEventListener('click', () => {
+        const d = touchDay(date);
+        d.sides.splice(idx, 1);
+        saveDays();
+        renderAll();
+      });
+      row.appendChild(x);
     }
-  }
-  return {
-    schemaVersion: 2,
-    parseVersion: 3,
-    origin: 'manual',
-    mealSetId: null,
-    locks: emptyDinnerLocks(),
-    slots: slots,
-    rawExample: sides
-  };
-}
-
-function getDinnerMain(dinner) {
-  return isDinnerV2(dinner) ? dinner.slots.main : dinner;
-}
-
-const recipeData = loadRecipeDataFromStorage();
-let recipes = recipeData.recipes;
-let mealSets = recipeData.mealSets;
-let sideCandidates = recipeData.sideCandidates;
-let soupCandidates = recipeData.soupCandidates;
-let entries = Storage.get('entries') || [];
-let priorities = Storage.get('prio') || [];
-let breakfastPatterns = Storage.get('bpats') || [...DEFAULT_BREAKFAST_PATTERNS];
-let changeNotes = (Storage.get('changeNotes') || [])
-  .map(normalizeChangeNote)
-  .filter(Boolean);
-
-function saveEntries() { Storage.set('entries', entries); }
-
-function isAllowedChangeNoteValue(list, value) {
-  return list.some(item => item.value === value);
-}
-
-function makeChangeNoteId() {
-  return 'note:' + Date.now().toString(36) + ':' +
-    Math.floor(Math.random() * 0xFFFFFF).toString(36);
-}
-
-function normalizeChangeNote(raw) {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
-  const target = raw.target && typeof raw.target === 'object' && !Array.isArray(raw.target)
-    ? raw.target
-    : {};
-  const action = isAllowedChangeNoteValue(CHANGE_NOTE_ACTIONS, raw.action) ? raw.action : 'update';
-  const kind = isAllowedChangeNoteValue(CHANGE_NOTE_TARGET_KINDS, target.kind) ? target.kind : 'other';
-  const field = isAllowedChangeNoteValue(CHANGE_NOTE_FIELDS, raw.field) ? raw.field : 'other';
-  const slotName = Object.prototype.hasOwnProperty.call(CHANGE_NOTE_SLOT_LABELS, target.slotName)
-    ? target.slotName
-    : null;
-  const date = typeof target.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(target.date)
-    ? target.date
-    : null;
-  const now = new Date().toISOString();
-  return {
-    id: typeof raw.id === 'string' && raw.id ? raw.id : makeChangeNoteId(),
-    createdAt: typeof raw.createdAt === 'string' && raw.createdAt ? raw.createdAt : now,
-    updatedAt: typeof raw.updatedAt === 'string' && raw.updatedAt ? raw.updatedAt : now,
-    action: action,
-    target: {
-      kind: kind,
-      recipeId: target.recipeId != null && target.recipeId !== '' ? String(target.recipeId) : null,
-      name: typeof target.name === 'string' ? target.name : '',
-      book: typeof target.book === 'string' ? target.book : '',
-      page: typeof target.page === 'string' ? target.page : '',
-      date: date,
-      slotName: slotName
-    },
-    field: field,
-    note: typeof raw.note === 'string' ? raw.note : ''
-  };
-}
-
-function saveChangeNotes() {
-  Storage.set('changeNotes', changeNotes);
-  renderChangeNoteButton();
-}
-
-function pruneOldEntries() {
-  const before = entries.length;
-  entries = entries.filter(entry => !isPrunableEntry(entry));
-  if (entries.length !== before) saveEntries();
-}
-
-function normalizeEntries() {
-  let changed = false;
-  entries.forEach(entry => {
-    if (entry.status) {
-      delete entry.status;
-      changed = true;
-    }
-    if (entry.ruleOverride && !isValidRule(entry.ruleOverride)) {
-      delete entry.ruleOverride;
-      changed = true;
-    }
-    const normalizedDinner = normalizeDinner(entry.dinner);
-    if (JSON.stringify(normalizedDinner) !== JSON.stringify(entry.dinner)) {
-      entry.dinner = normalizedDinner;
-      changed = true;
-    }
+    view.appendChild(row);
   });
-  pruneOldEntries();
-  if (changed) saveEntries();
+  if (!locked) {
+    const add = el('div', 'slot-add');
+    [['副菜', '副菜を追加'], ['汁物', '汁物を追加']].forEach(([role, label]) => {
+      const btn = el('button', null, label);
+      btn.addEventListener('click', () => {
+        const d = touchDay(date);
+        d.sides.push({ role, name: '' });
+        saveDays();
+        renderDay();
+        const inputs = document.querySelectorAll('#day-view .combo input');
+        if (inputs.length) inputs[inputs.length - 1].focus();
+      });
+      add.appendChild(btn);
+    });
+    view.appendChild(add);
+  }
+
+  // --- アレンジメモ ---
+  view.appendChild(el('div', 'sec-lb', 'アレンジメモ'));
+  if (locked) {
+    view.appendChild(el('div', day.arrangeMemo ? 'dv-ing' : 'dv-empty', day.arrangeMemo || '—'));
+  } else {
+    const memoInput = document.createElement('input');
+    memoInput.type = 'text';
+    memoInput.className = 'dv-line-input';
+    memoInput.placeholder = '例：キャベツ残りを追加で入れる…';
+    memoInput.value = day.arrangeMemo || '';
+    memoInput.addEventListener('blur', () => {
+      const d = touchDay(date);
+      if (d.arrangeMemo !== memoInput.value.trim()) {
+        d.arrangeMemo = memoInput.value.trim();
+        saveDays();
+      }
+    });
+    memoInput.addEventListener('keydown', e => { if (e.key === 'Enter') memoInput.blur(); });
+    view.appendChild(memoInput);
+    const send = el('button', 'memo-send', '→ このメモをNotionメモに送る');
+    send.addEventListener('click', () => {
+      memoInput.blur();
+      const text = memoInput.value.trim();
+      if (!text) return;
+      memos.push({
+        text: (day.main ? '【' + day.main.name + '】' : '') + text,
+        date: todayISO(), done: false
+      });
+      saveMemos();
+      renderCounts();
+      send.textContent = '✓ 送りました';
+      setTimeout(() => { send.textContent = '→ このメモをNotionメモに送る'; }, 1500);
+    });
+    view.appendChild(send);
+  }
+
+  // --- 朝食 ---
+  view.appendChild(el('div', 'sec-lb', '朝食'));
+  const bfWrap = el('div', 'dv-bf');
+  if (locked) {
+    bfWrap.appendChild(el('span', 'dv-ing', day.breakfast || '—'));
+  } else {
+    const sel = document.createElement('select');
+    const none = el('option', null, '—');
+    none.value = '';
+    sel.appendChild(none);
+    breakfastPatterns.forEach(p => {
+      const o = el('option', null, p.name);
+      o.value = p.name;
+      if (day.breakfast === p.name) o.selected = true;
+      sel.appendChild(o);
+    });
+    if (day.breakfast && !breakfastPatterns.some(p => p.name === day.breakfast)) {
+      const o = el('option', null, day.breakfast);
+      o.value = day.breakfast;
+      o.selected = true;
+      sel.appendChild(o);
+    }
+    sel.addEventListener('change', () => {
+      touchDay(date).breakfast = sel.value || null;
+      saveDays();
+    });
+    bfWrap.appendChild(sel);
+  }
+  view.appendChild(bfWrap);
+
+  if (locked) view.appendChild(el('div', 'dv-done-note', '確定済みの日です。直すときは「編集に戻す」をタップ。'));
 }
 
-/* ----- Rules UI ----- */
+function setMain(date, name) {
+  const d = touchDay(date);
+  const rec = findRecipe(name);
+  d.main = rec ? mainSnapshot(rec) : {
+    name, category: '', ingredients: '', keyIngredients: extractKeyIngredients(name),
+    book: '', page: '', hotcookKey: ''
+  };
+  // 副菜・汁物が未入力なら、合う副菜・実績からよく使うものを自動セット
+  if (!d.sides.some(s => s.name)) {
+    const sugg = sideSuggestions(name, '').filter(s => !s.plain);
+    const auto = [];
+    const side = sugg.find(s => s.role === '副菜');
+    const soup = sugg.find(s => s.role === '汁物');
+    if (side) auto.push({ role: '副菜', name: side.name });
+    if (soup) auto.push({ role: '汁物', name: soup.name });
+    if (auto.length) d.sides = auto;
+  }
+  saveDays();
+  panelShowsMain = false;
+  panelShowAll = false;
+  panelQuery = '';
+  renderAll();
+}
+
+/** インクリメンタル検索つき入力欄。候補タップか確定でcommit(name)を呼ぶ */
+function buildCombo(opts) {
+  const wrap = el('div', 'combo');
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.placeholder = opts.placeholder || '';
+  input.value = opts.value || '';
+  const dd = el('div', 'combo-dd');
+
+  const fill = () => {
+    const items = opts.suggest(input.value.trim());
+    dd.innerHTML = '';
+    if (!items.length) { dd.classList.remove('open'); return; }
+    items.forEach(it => {
+      const row = el('div', 'combo-it');
+      row.appendChild(el('span', null, it.name));
+      if (it.badge) row.appendChild(el('span', 'bdg' + (it.plain ? ' plain' : ''), it.badge));
+      row.addEventListener('pointerdown', e => {
+        e.preventDefault();
+        input.value = it.name;
+        dd.classList.remove('open');
+        input.blur();
+        opts.commit(it.name, it);
+      });
+      dd.appendChild(row);
+    });
+    dd.classList.add('open');
+  };
+
+  input.addEventListener('focus', fill);
+  input.addEventListener('input', fill);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); });
+  input.addEventListener('blur', () => {
+    setTimeout(() => dd.classList.remove('open'), 150);
+    opts.commit(input.value.trim());
+  });
+
+  wrap.appendChild(input);
+  wrap.appendChild(dd);
+  return wrap;
+}
+
+/* ============================================================
+   CANDIDATES PANEL
+   ============================================================ */
+
+function renderPanel() {
+  const panel = document.getElementById('cand-panel');
+  panel.innerHTML = '';
+  const date = selectedDate;
+  const day = getDay(date);
+
+  if (!recipes.length) {
+    panel.appendChild(el('div', 'cp-empty', '設定からレシピCSVを読み込んでください'));
+    return;
+  }
+  if (day.confirmed) {
+    panel.appendChild(el('div', 'cp-empty', 'この日は確定済みです'));
+    return;
+  }
+
+  const showMain = panelShowsMain || !day.main;
+
+  const head = el('div', 'cp-head');
+  if (showMain) {
+    head.appendChild(el('span', 'cp-title', '主菜の候補'));
+    head.appendChild(el('span', 'cp-sub', ruleLabel(ruleForDate(date)) + 'から'));
+    if (day.main) {
+      const sw = el('button', 'cp-switch', '副菜候補へ');
+      sw.addEventListener('click', () => { panelShowsMain = false; panelShowAll = false; panelQuery = ''; renderPanel(); });
+      head.appendChild(sw);
+    }
+  } else {
+    head.appendChild(el('span', 'cp-title', '副菜・汁物の候補'));
+    head.appendChild(el('span', 'cp-sub', day.main.name + 'に'));
+    const sw = el('button', 'cp-switch', '主菜候補へ');
+    sw.addEventListener('click', () => { panelShowsMain = true; panelShowAll = false; panelQuery = ''; renderPanel(); });
+    head.appendChild(sw);
+  }
+  panel.appendChild(head);
+
+  const listWrap = el('div');
+  panel.appendChild(listWrap);
+
+  if (showMain) renderMainCands(listWrap, date);
+  else renderSideCands(listWrap, date, day);
+}
+
+function renderMainCands(wrap, date) {
+  wrap.innerHTML = '';
+  const all = mainCandidates(date);
+
+  if (!all.length) {
+    wrap.appendChild(el('div', 'cp-empty', 'この条件の主菜がありません。曜日チップを「すべて」にすると全主菜から選べます。'));
+    return;
+  }
+
+  if (!panelShowAll) {
+    all.slice(0, 5).forEach(c => wrap.appendChild(buildCandCard(c, date)));
+    if (all.length > 5) {
+      const more = el('button', 'cp-more', 'すべて見る（' + all.length + '件）');
+      more.addEventListener('click', () => { panelShowAll = true; panelQuery = ''; renderPanel(); });
+      wrap.appendChild(more);
+    }
+  } else {
+    const search = document.createElement('input');
+    search.type = 'text';
+    search.className = 'cp-search';
+    search.placeholder = '名前・食材で検索…';
+    search.value = panelQuery;
+    const listDiv = el('div');
+    const renderList = () => {
+      listDiv.innerHTML = '';
+      const q = panelQuery.trim();
+      const hits = all.filter(c => !q || c.rec.name.includes(q) || c.rec.ingredients.includes(q));
+      hits.forEach(c => {
+        const row = el('button', 'cl');
+        row.appendChild(el('span', 'n', c.rec.name));
+        const posWhy = c.why.filter(w => !w.neg);
+        const negWhy = c.why.filter(w => w.neg);
+        if (posWhy.length) row.appendChild(el('span', 'w', posWhy.map(w => w.text).join('・')));
+        else if (negWhy.length) row.appendChild(el('span', 'w plain', negWhy.map(w => w.text).join('・')));
+        else row.appendChild(el('span', 'w plain', c.rec.category));
+        row.addEventListener('click', () => setMain(date, c.rec.name));
+        listDiv.appendChild(row);
+      });
+      if (!hits.length) listDiv.appendChild(el('div', 'cp-empty', '見つかりません（そのまま左の入力欄に自由入力もできます）'));
+    };
+    search.addEventListener('input', () => { panelQuery = search.value; renderList(); });
+    const back = el('button', 'cp-more', '← 候補5件に戻る');
+    back.addEventListener('click', () => { panelShowAll = false; renderPanel(); });
+    wrap.appendChild(back);
+    wrap.appendChild(search);
+    wrap.appendChild(listDiv);
+    renderList();
+  }
+}
+
+function buildCandCard(c, date) {
+  const card = el('div', 'cd');
+  card.addEventListener('click', () => setMain(date, c.rec.name));
+
+  const top = el('div', 'cd-top');
+  top.appendChild(el('span', 'cd-name', c.rec.name));
+  top.appendChild(el('span', 'cd-cat', c.rec.category));
+  const skip = el('button', 'cd-skip', '外す');
+  skip.addEventListener('click', e => {
+    e.stopPropagation();
+    if (!excluded[date]) excluded[date] = new Set();
+    excluded[date].add(c.rec.name);
+    renderPanel();
+  });
+  top.appendChild(skip);
+  card.appendChild(top);
+
+  if (c.why.length) {
+    const why = el('div', 'cd-why');
+    c.why.forEach((w, i) => {
+      if (i) why.appendChild(document.createTextNode('・'));
+      why.appendChild(el('span', w.neg ? 'neg' : null, w.text));
+    });
+    card.appendChild(why);
+  }
+  if (c.rec.ingredients) card.appendChild(el('div', 'cd-ing', c.rec.ingredients));
+  if (c.rec.book) {
+    card.appendChild(el('div', 'dv-ref',
+      c.rec.book + (c.rec.page ? ' p.' + c.rec.page : '')));
+  }
+  return card;
+}
+
+function renderSideCands(wrap, date, day) {
+  wrap.innerHTML = '';
+  const items = sideSuggestions(day.main.name, '');
+  if (!items.length) {
+    wrap.appendChild(el('div', 'cp-empty', '副菜・汁物のデータがまだありません。左の欄に自由入力できます。'));
+    return;
+  }
+  items.slice(0, 25).forEach(it => {
+    const row = el('button', 'cl');
+    row.appendChild(el('span', 'n', it.name));
+    row.appendChild(el('span', 'w' + (it.plain ? ' plain' : ''), it.badge));
+    row.addEventListener('click', () => {
+      const d = touchDay(date);
+      d.sides.push({ role: it.role, name: it.name });
+      saveDays();
+      renderStrip();
+      renderDay();
+    });
+    wrap.appendChild(row);
+  });
+}
+
+/* ============================================================
+   PANTRY BAR — 常設。チップタップで まるごと⇄残りあり 切替
+   ============================================================ */
+
+function bumpPanHist(name) {
+  const cur = panHist[name] || { n: 0, last: '' };
+  panHist[name] = { n: cur.n + 1, last: todayISO() };
+  const keys = Object.keys(panHist);
+  if (keys.length > 40) {
+    keys.sort((a, b) => panHist[b].n - panHist[a].n || (panHist[b].last > panHist[a].last ? 1 : -1));
+    keys.slice(30).forEach(k => delete panHist[k]);
+  }
+  Storage.set('panHist', panHist);
+}
+
+/** よく使う食材の呼び出し候補（在庫に入っているものは除く） */
+function pantrySuggestions(limit) {
+  const inPantry = new Set(pantry.map(p => p.name));
+  return Object.entries(panHist)
+    .filter(([name]) => !inPantry.has(name))
+    .sort((a, b) => b[1].n - a[1].n || (b[1].last > a[1].last ? 1 : -1))
+    .slice(0, limit || 6)
+    .map(([name]) => name);
+}
+
+function addPantryItem(name) {
+  pantry.push({ name, state: 'whole', added: todayISO() });
+  bumpPanHist(name);
+  savePantry();
+  renderPantryBar();
+  renderPanel();
+  renderDay();
+}
+
+function renderPantryBar() {
+  const sugg = document.getElementById('pantry-sugg');
+  sugg.innerHTML = '';
+  pantrySuggestions(6).forEach(name => {
+    const ghost = el('button', 'pan-ghost', '＋' + name);
+    ghost.addEventListener('click', () => addPantryItem(name));
+    sugg.appendChild(ghost);
+  });
+  const wrap = document.getElementById('pantry-chips');
+  wrap.innerHTML = '';
+  pantry.forEach((item, idx) => {
+    const chip = el('span', 'pan-chip' + (item.state === 'partial' ? ' partial' : ''));
+    chip.title = 'タップで まるごと⇄残りあり';
+    chip.appendChild(el('span', null,
+      item.name + (item.state === 'partial' ? '・残りあり' : '')));
+    chip.addEventListener('click', () => {
+      item.state = item.state === 'partial' ? 'whole' : 'partial';
+      savePantry();
+      renderPantryBar();
+      renderPanel();
+      renderDay();
+    });
+    const x = el('button', 'px', '✕');
+    x.addEventListener('click', e => {
+      e.stopPropagation();
+      pantry.splice(idx, 1);
+      savePantry();
+      renderPantryBar();
+      renderPanel();
+      renderDay();
+    });
+    chip.appendChild(x);
+    wrap.appendChild(chip);
+  });
+}
+
+function addPantryInline() {
+  const input = document.getElementById('pantry-inline');
+  const name = input.value.trim();
+  if (!name) return;
+  input.value = '';
+  addPantryItem(name);
+}
+
+/* ============================================================
+   NOTION MEMOS
+   ============================================================ */
+
+function renderMemos() {
+  const list = document.getElementById('memo-list');
+  list.innerHTML = '';
+  if (!memos.length) list.appendChild(el('div', 'cp-empty', 'Notionに後で反映したいことをためておけます'));
+  memos.forEach((m, idx) => {
+    const row = el('div', 'mm-row');
+    const chk = el('button', 'mm-chk', m.done ? '✓' : '');
+    chk.addEventListener('click', () => {
+      m.done = !m.done;
+      saveMemos();
+      renderMemos();
+    });
+    row.appendChild(chk);
+    const body = el('div', 'mm-body');
+    body.appendChild(el('div', 'mm-text' + (m.done ? ' done' : ''), m.text));
+    body.appendChild(el('div', 'mm-meta', m.date));
+    row.appendChild(body);
+    const x = el('button', 'mm-x', '✕');
+    x.addEventListener('click', () => {
+      memos.splice(idx, 1);
+      saveMemos();
+      renderMemos();
+    });
+    row.appendChild(x);
+    list.appendChild(row);
+  });
+  renderCounts();
+}
+
+function addMemo() {
+  const input = document.getElementById('memo-input');
+  const text = input.value.trim();
+  if (!text) return;
+  memos.push({ text, date: todayISO(), done: false });
+  input.value = '';
+  saveMemos();
+  renderMemos();
+}
+
+function promptMemo(recipeName) {
+  const text = prompt('Notionメモ（' + recipeName + '）');
+  if (!text || !text.trim()) return;
+  memos.push({ text: '【' + recipeName + '】' + text.trim(), date: todayISO(), done: false });
+  saveMemos();
+  renderCounts();
+}
+
+function copyMemos() {
+  const lines = memos.filter(m => !m.done).map(m => '- ' + m.text + '（' + m.date + '）');
+  if (!lines.length) { alert('未処理のメモはありません'); return; }
+  const text = lines.join('\n');
+  const done = () => alert('コピーしました（' + lines.length + '件）');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
+  } else {
+    fallbackCopy(text, done);
+  }
+}
+
+function fallbackCopy(text, done) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'absolute';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); done(); } catch { alert('コピーできませんでした'); }
+  document.body.removeChild(ta);
+}
+
+/* ============================================================
+   SETTINGS
+   ============================================================ */
 
 function renderRules() {
   const grid = document.getElementById('rules-grid');
-  const rules = normalizeRules(Storage.get('rules'));
+  const rules = getRules();
   grid.innerHTML = '';
-
-  ['月', '火', '水', '木', '金', '土', '日'].forEach(day => {
-    const rule = rules[day] || DEFAULT_RULES[day];
-
-    const label = document.createElement('span');
-    label.className = 'rl';
-    label.textContent = day;
-
+  ['月', '火', '水', '木', '金', '土', '日'].forEach(dayName => {
+    const rule = rules[dayName] || DEFAULT_RULES[dayName];
+    grid.appendChild(el('span', 'rl', dayName));
     const select = document.createElement('select');
     RULE_OPTIONS.forEach(opt => {
-      const option = document.createElement('option');
-      option.value = JSON.stringify({ type: opt.type, value: opt.value });
-      option.textContent = opt.label;
-      if (opt.type === rule.type && opt.value === rule.value) option.selected = true;
-      select.appendChild(option);
+      const o = el('option', null, opt.label);
+      o.value = JSON.stringify({ type: opt.type, value: opt.value });
+      if (opt.type === rule.type && opt.value === rule.value) o.selected = true;
+      select.appendChild(o);
     });
     select.addEventListener('change', () => {
-      const allRules = normalizeRules(Storage.get('rules'));
-      allRules[day] = JSON.parse(select.value);
-      Storage.set('rules', allRules);
-      render();
+      const all = getRules();
+      all[dayName] = JSON.parse(select.value);
+      Storage.set('rules', all);
+      renderDay();
+      renderPanel();
     });
-
-    grid.appendChild(label);
     grid.appendChild(select);
   });
 }
 
 function resetRules() {
-  Storage.set('rules', normalizeRules());
+  Storage.set('rules', { ...DEFAULT_RULES });
   renderRules();
-  render();
+  renderDay();
+  renderPanel();
 }
-
-/* ----- Breakfast Patterns UI ----- */
 
 function renderBreakfastPatterns() {
   const list = document.getElementById('bp-list');
   list.innerHTML = '';
   breakfastPatterns.forEach((pattern, idx) => {
-    const div = document.createElement('div');
-    div.className = 'bp-item';
-
+    const row = el('div', 'bp-row');
     const nameInput = document.createElement('input');
     nameInput.type = 'text';
+    nameInput.className = 'b-n';
     nameInput.value = pattern.name;
-    nameInput.setAttribute('aria-label', '朝食パターン名');
-    nameInput.addEventListener('change', () =>
-      updateBreakfastPattern(idx, 'name', nameInput.value)
-    );
-    div.appendChild(nameInput);
-
+    nameInput.placeholder = 'メニュー名';
+    nameInput.addEventListener('blur', () => updateBreakfastPattern(idx, 'name', nameInput.value));
+    nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') nameInput.blur(); });
+    row.appendChild(nameInput);
     const ingInput = document.createElement('input');
     ingInput.type = 'text';
-    ingInput.className = 'bp-ing';
-    ingInput.value = pattern.ingredients || '';
+    ingInput.className = 'b-i';
+    ingInput.value = pattern.ingredients;
     ingInput.placeholder = '材料（任意）';
-    ingInput.setAttribute('aria-label', '朝食パターン材料');
-    ingInput.addEventListener('change', () =>
-      updateBreakfastPattern(idx, 'ingredients', ingInput.value)
-    );
-    div.appendChild(ingInput);
-
-    const delBtn = document.createElement('button');
-    delBtn.textContent = '✕';
-    delBtn.addEventListener('click', () => removeBreakfastPattern(idx));
-    div.appendChild(delBtn);
-
-    list.appendChild(div);
+    ingInput.addEventListener('blur', () => updateBreakfastPattern(idx, 'ingredients', ingInput.value));
+    ingInput.addEventListener('keydown', e => { if (e.key === 'Enter') ingInput.blur(); });
+    row.appendChild(ingInput);
+    const x = el('button', null, '✕');
+    x.addEventListener('click', () => {
+      breakfastPatterns.splice(idx, 1);
+      Storage.set('bpats', breakfastPatterns);
+      renderBreakfastPatterns();
+      renderDay();
+    });
+    row.appendChild(x);
+    list.appendChild(row);
   });
 }
 
 function updateBreakfastPattern(idx, field, value) {
-  const pattern = breakfastPatterns[idx];
-  if (!pattern) return;
-
-  if (field === 'name') {
-    const oldName = pattern.name;
-    const nextName = value.trim();
-    if (!nextName) {
-      renderBreakfastPatterns();
-      return;
+  const trimmed = value.trim();
+  if (field === 'name' && !trimmed) { renderBreakfastPatterns(); return; }
+  const oldName = breakfastPatterns[idx].name;
+  if (breakfastPatterns[idx][field] === trimmed) return;
+  breakfastPatterns[idx][field] = trimmed;
+  if (field === 'name' && oldName !== trimmed) {
+    for (const day of Object.values(days)) {
+      if (day.breakfast === oldName) day.breakfast = trimmed;
     }
-    pattern.name = nextName;
-    if (oldName !== nextName) {
-      entries.forEach(entry => {
-        if (entry.breakfast === oldName) entry.breakfast = nextName;
-      });
-      saveEntries();
-    }
-  } else if (field === 'ingredients') {
-    pattern.ingredients = value.trim();
+    saveDays();
   }
-
   Storage.set('bpats', breakfastPatterns);
-  renderBreakfastPatterns();
-  render();
+  renderDay();
 }
 
 function addBreakfastPattern() {
@@ -1621,533 +1627,19 @@ function addBreakfastPattern() {
   const ingInput = document.getElementById('bp-ing-input');
   const name = nameInput.value.trim();
   if (!name) return;
-  breakfastPatterns.push({ name: name, ingredients: ingInput.value.trim() });
+  breakfastPatterns.push({ name, ingredients: ingInput.value.trim() });
   nameInput.value = '';
   ingInput.value = '';
   Storage.set('bpats', breakfastPatterns);
   renderBreakfastPatterns();
-  render();
+  renderDay();
 }
 
-function removeBreakfastPattern(idx) {
-  breakfastPatterns.splice(idx, 1);
-  Storage.set('bpats', breakfastPatterns);
-  renderBreakfastPatterns();
-  render();
-}
+/* ----- CSV ----- */
 
-/* ----- Change Notes ----- */
-
-function getChangeNoteLabel(list, value) {
-  const item = list.find(opt => opt.value === value);
-  return item ? item.label : value;
-}
-
-function changeNoteTargetText(note) {
-  const target = note.target || {};
-  const parts = [];
-  parts.push(getChangeNoteLabel(CHANGE_NOTE_TARGET_KINDS, target.kind || 'other'));
-  if (target.name) parts.push(target.name);
-  if (target.book) parts.push(target.book + (target.page ? ' p.' + target.page : ''));
-  else if (target.page) parts.push('p.' + target.page);
-  if (target.date) parts.push(formatDate(target.date));
-  if (target.slotName) parts.push(CHANGE_NOTE_SLOT_LABELS[target.slotName] || target.slotName);
-  return parts.filter(Boolean).join(' / ');
-}
-
-function changeNoteTitle(note) {
-  const action = getChangeNoteLabel(CHANGE_NOTE_ACTIONS, note.action);
-  const target = changeNoteTargetText(note) || '対象未指定';
-  return '[' + action + '] ' + target;
-}
-
-function renderChangeNoteButton() {
-  const btn = document.getElementById('change-notes-button');
-  if (!btn) return;
-  btn.textContent = changeNotes.length ? '変更メモ (' + changeNotes.length + ')' : '変更メモ';
-}
-
-function showChangeNotesModal() {
-  document.getElementById('note-overlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeChangeNotes(e) {
-  if (e && e.target !== document.getElementById('note-overlay')) return;
-  document.getElementById('note-overlay').classList.remove('open');
-  document.body.style.overflow = '';
-}
-
-function openChangeNotesList() {
-  document.getElementById('note-title').textContent = '変更メモ';
-  renderChangeNotesList();
-  showChangeNotesModal();
-}
-
-function renderChangeNotesList() {
-  const body = document.getElementById('note-body');
-  let html = '<div class="note-toolbar">' +
-    '<button onclick="openChangeNoteEditor()">新規メモ</button>' +
-    '<button onclick="exportChangeNotesJSON()">JSON書き出し</button>' +
-    '<button onclick="exportChangeNotesMarkdown()">Markdown書き出し</button>';
-  if (changeNotes.length) {
-    html += '<button class="danger" onclick="clearChangeNotes()">全削除</button>';
-  }
-  html += '</div>';
-
-  if (!changeNotes.length) {
-    html += '<div class="note-empty">変更メモはまだありません</div>';
-    body.innerHTML = html;
-    return;
-  }
-
-  html += '<div class="note-list">';
-  changeNotes
-    .slice()
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-    .forEach(note => {
-      const noteId = escapeHTML(escapeJSString(note.id));
-      html += '<div class="note-item">' +
-        '<div class="note-item-title">' + escapeHTML(changeNoteTitle(note)) + '</div>' +
-        '<div class="note-meta">' +
-          escapeHTML(getChangeNoteLabel(CHANGE_NOTE_FIELDS, note.field)) +
-          ' / 作成 ' + escapeHTML(formatDateTime(note.createdAt)) +
-          ' / 更新 ' + escapeHTML(formatDateTime(note.updatedAt)) +
-        '</div>' +
-        '<div class="note-text">' + escapeHTML(note.note || '') + '</div>' +
-        '<div class="note-actions">' +
-          '<button onclick="openChangeNoteEditor(\'' + noteId + '\')">編集</button>' +
-          '<button class="danger" onclick="deleteChangeNote(\'' + noteId + '\')">削除</button>' +
-        '</div>' +
-      '</div>';
-    });
-  html += '</div>';
-  body.innerHTML = html;
-}
-
-function formatDateTime(isoString) {
-  const d = new Date(isoString);
-  if (Number.isNaN(d.getTime())) return isoString || '';
-  return d.getFullYear() + '-' +
-    String(d.getMonth() + 1).padStart(2, '0') + '-' +
-    String(d.getDate()).padStart(2, '0') + ' ' +
-    String(d.getHours()).padStart(2, '0') + ':' +
-    String(d.getMinutes()).padStart(2, '0');
-}
-
-function optionHTML(options, selected) {
-  return options.map(opt =>
-    '<option value="' + escapeHTML(opt.value) + '"' +
-    (opt.value === selected ? ' selected' : '') +
-    '>' + escapeHTML(opt.label) + '</option>'
-  ).join('');
-}
-
-function slotOptionHTML(selected) {
-  let html = '<option value=""' + (!selected ? ' selected' : '') + '>指定なし</option>';
-  Object.keys(CHANGE_NOTE_SLOT_LABELS).forEach(key => {
-    html += '<option value="' + escapeHTML(key) + '"' +
-      (key === selected ? ' selected' : '') +
-      '>' + escapeHTML(CHANGE_NOTE_SLOT_LABELS[key]) + '</option>';
-  });
-  return html;
-}
-
-function openChangeNoteEditor(noteId, preset) {
-  const existing = noteId ? changeNotes.find(note => note.id === noteId) : null;
-  const note = normalizeChangeNote(existing || preset || {
-    action: 'update',
-    target: {
-      kind: 'other',
-      recipeId: null,
-      name: '',
-      book: '',
-      page: '',
-      date: null,
-      slotName: null
-    },
-    field: 'other',
-    note: ''
-  });
-  document.getElementById('note-title').textContent = existing ? '変更メモを編集' : '変更メモを追加';
-  renderChangeNoteEditor(note, !!existing);
-  showChangeNotesModal();
-}
-
-function renderChangeNoteEditor(note, isEditing) {
-  const target = note.target || {};
-  const body = document.getElementById('note-body');
-  body.innerHTML = '<form class="note-form" onsubmit="saveChangeNoteForm(event)">' +
-    '<input type="hidden" id="note-id" value="' + escapeHTML(isEditing ? note.id : '') + '">' +
-    '<input type="hidden" id="note-created-at" value="' + escapeHTML(note.createdAt || '') + '">' +
-    '<input type="hidden" id="note-recipe-id" value="' + escapeHTML(target.recipeId || '') + '">' +
-    '<div class="note-form-row">' +
-      '<label>操作<select id="note-action">' + optionHTML(CHANGE_NOTE_ACTIONS, note.action) + '</select></label>' +
-      '<label>項目<select id="note-field">' + optionHTML(CHANGE_NOTE_FIELDS, note.field) + '</select></label>' +
-    '</div>' +
-    '<div class="note-form-row">' +
-      '<label>対象<select id="note-kind">' + optionHTML(CHANGE_NOTE_TARGET_KINDS, target.kind || 'other') + '</select></label>' +
-      '<label>献立枠<select id="note-slot-name">' + slotOptionHTML(target.slotName) + '</select></label>' +
-    '</div>' +
-    '<label>対象名<input type="text" id="note-target-name" value="' + escapeHTML(target.name || '') + '" placeholder="レシピ名など"></label>' +
-    '<div class="note-form-row">' +
-      '<label>レシピ本<input type="text" id="note-book" value="' + escapeHTML(target.book || '') + '"></label>' +
-      '<label>ページ<input type="text" id="note-page" value="' + escapeHTML(target.page || '') + '"></label>' +
-    '</div>' +
-    '<label>日付<input type="date" id="note-date" value="' + escapeHTML(target.date || '') + '"></label>' +
-    '<label>メモ<textarea id="note-text" required placeholder="例: 主な材料に「玉ねぎ」を追加。Notion更新時に反映したい。">' + escapeHTML(note.note || '') + '</textarea></label>' +
-    '<div class="note-form-actions">' +
-      '<button type="submit" class="save-btn">保存</button>' +
-      '<button type="button" onclick="openChangeNotesList()">キャンセル</button>' +
-    '</div>' +
-  '</form>';
-}
-
-function getChangeNoteFormValue(id) {
-  const el = document.getElementById(id);
-  return el ? el.value : '';
-}
-
-function saveChangeNoteForm(e) {
-  e.preventDefault();
-  const noteText = getChangeNoteFormValue('note-text').trim();
-  if (!noteText) {
-    alert('メモ本文を入力してください');
-    return;
-  }
-  const id = getChangeNoteFormValue('note-id');
-  const existing = id ? changeNotes.find(note => note.id === id) : null;
-  const action = getChangeNoteFormValue('note-action');
-  const kind = getChangeNoteFormValue('note-kind');
-  const field = getChangeNoteFormValue('note-field');
-  const slotName = getChangeNoteFormValue('note-slot-name');
-  const date = getChangeNoteFormValue('note-date');
-  const now = new Date().toISOString();
-  const normalized = normalizeChangeNote({
-    id: existing ? existing.id : makeChangeNoteId(),
-    createdAt: existing ? existing.createdAt : (getChangeNoteFormValue('note-created-at') || now),
-    updatedAt: now,
-    action: action,
-    target: {
-      kind: kind,
-      recipeId: getChangeNoteFormValue('note-recipe-id') || null,
-      name: getChangeNoteFormValue('note-target-name').trim(),
-      book: getChangeNoteFormValue('note-book').trim(),
-      page: getChangeNoteFormValue('note-page').trim(),
-      date: date || null,
-      slotName: slotName || null
-    },
-    field: field,
-    note: noteText
-  });
-
-  if (existing) {
-    changeNotes = changeNotes.map(note => note.id === existing.id ? normalized : note);
-  } else {
-    changeNotes.push(normalized);
-  }
-  saveChangeNotes();
-  openChangeNotesList();
-}
-
-function deleteChangeNote(id) {
-  const note = changeNotes.find(item => item.id === id);
-  if (!note) return;
-  if (!confirm('この変更メモを削除しますか？')) return;
-  changeNotes = changeNotes.filter(item => item.id !== id);
-  saveChangeNotes();
-  renderChangeNotesList();
-}
-
-function clearChangeNotes() {
-  if (!changeNotes.length) return;
-  if (!confirm('変更メモをすべて削除しますか？')) return;
-  changeNotes = [];
-  saveChangeNotes();
-  renderChangeNotesList();
-}
-
-function buildChangeNoteTargetFromSlot(idx, slotName) {
-  const entry = entries[idx];
-  const dinner = entry && normalizeDinner(entry.dinner);
-  const slot = dinner && dinner.slots ? dinner.slots[slotName] : null;
-  if (!entry || !slot || !slot.name) return null;
-  const recipe = slot.recipeId ? findRecipeById(slot.recipeId) : null;
-  return {
-    kind: slot.recipeId ? 'recipe' : (dinner.mealSetId ? 'mealset' : 'other'),
-    recipeId: slot.recipeId || null,
-    name: slot.name || '',
-    book: (recipe && recipe.book) || slot.book || '',
-    page: (recipe && recipe.page) || slot.page || '',
-    date: entry.date || null,
-    slotName: slotName
-  };
-}
-
-function openChangeNoteFromSlot(idx, slotName) {
-  const target = buildChangeNoteTargetFromSlot(idx, slotName);
-  if (!target) {
-    alert('メモする料理がありません');
-    return;
-  }
-  openChangeNoteEditor(null, {
-    action: 'update',
-    target: target,
-    field: target.kind === 'mealset' ? 'mealExample' : 'other',
-    note: ''
-  });
-}
-
-function downloadTextFile(filename, content, type) {
-  const blob = new Blob([content], { type: type });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-function exportChangeNotesJSON() {
-  if (!changeNotes.length) {
-    alert('書き出す変更メモがありません');
-    return;
-  }
-  const data = {
-    _type: 'meal_planner_change_notes',
-    _schemaVersion: 1,
-    _exported: new Date().toISOString(),
-    appVersion: APP_VERSION,
-    notes: changeNotes
-  };
-  downloadTextFile(
-    'レシピ変更メモ_' + todayISO().replace(/-/g, '') + '.json',
-    JSON.stringify(data, null, 2),
-    'application/json'
-  );
-}
-
-function markdownFence(text) {
-  return String(text || '').includes('```') ? '````' : '```';
-}
-
-function exportChangeNotesMarkdown() {
-  if (!changeNotes.length) {
-    alert('書き出す変更メモがありません');
-    return;
-  }
-  const lines = [
-    '# レシピ変更メモ',
-    '',
-    '- 書き出し: ' + new Date().toISOString(),
-    '- 件数: ' + changeNotes.length,
-    ''
-  ];
-  changeNotes.forEach((note, idx) => {
-    const target = note.target || {};
-    const fence = markdownFence(note.note);
-    lines.push(
-      '## ' + (idx + 1) + '. ' + changeNoteTitle(note),
-      '',
-      '- 操作: ' + getChangeNoteLabel(CHANGE_NOTE_ACTIONS, note.action),
-      '- 対象: ' + changeNoteTargetText(note),
-      '- 項目: ' + getChangeNoteLabel(CHANGE_NOTE_FIELDS, note.field),
-      '- レシピID: ' + (target.recipeId || ''),
-      '- 日付: ' + (target.date || ''),
-      '- 献立枠: ' + (target.slotName ? CHANGE_NOTE_SLOT_LABELS[target.slotName] : ''),
-      '- 作成: ' + note.createdAt,
-      '- 更新: ' + note.updatedAt,
-      '',
-      '本文:',
-      fence + 'text',
-      note.note || '',
-      fence,
-      ''
-    );
-  });
-  downloadTextFile(
-    'レシピ変更メモ_' + todayISO().replace(/-/g, '') + '.md',
-    lines.join('\n'),
-    'text/markdown'
-  );
-}
-
-/* ----- Settings Export / Import ----- */
-
-function exportSettings() {
-  const data = {
-    _type: 'meal_planner_settings',
-    _schemaVersion: 1,
-    _exported: new Date().toISOString(),
-    breakfastPatterns: breakfastPatterns,
-    rules: normalizeRules(Storage.get('rules')),
-    priorities: priorities
-  };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = '献立プランナー設定_' +
-    todayISO().replace(/-/g, '') + '.json';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-document.getElementById('settings-file').addEventListener('change', function(e) {
-  if (!e.target.files.length) return;
-  const file = e.target.files[0];
-  if (file.size > 1 * 1024 * 1024) {
-    alert('ファイルサイズが大きすぎます');
-    e.target.value = '';
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = function(ev) {
-    try {
-      const data = JSON.parse(ev.target.result);
-      if (data._type !== 'meal_planner_settings') {
-        alert('献立プランナーの設定ファイルではありません');
-        return;
-      }
-      const parts = [];
-      if (Array.isArray(data.breakfastPatterns)) parts.push('朝食パターン ' + data.breakfastPatterns.length + '件');
-      if (data.rules) parts.push('曜日ルール');
-      if (Array.isArray(data.priorities) && data.priorities.length) parts.push('優先食材 ' + data.priorities.length + '件');
-      if (!parts.length) { alert('読み込めるデータがありません'); return; }
-
-      if (!confirm('以下を上書きします：\n' + parts.join('、') + '\n\nよろしいですか？')) return;
-
-      if (Array.isArray(data.breakfastPatterns)) {
-        breakfastPatterns = data.breakfastPatterns
-          .filter(p => p && typeof p.name === 'string' && p.name.trim())
-          .map(p => ({
-            name: String(p.name),
-            ingredients: typeof p.ingredients === 'string' ? p.ingredients : ''
-          }));
-        Storage.set('bpats', breakfastPatterns);
-      }
-      if (data.rules && typeof data.rules === 'object' && !Array.isArray(data.rules)) {
-        Storage.set('rules', normalizeRules(data.rules));
-      }
-      if (Array.isArray(data.priorities)) {
-        priorities = data.priorities.filter(p => typeof p === 'string');
-        Storage.set('prio', priorities);
-      }
-
-      renderRules();
-      renderBreakfastPatterns();
-      renderPriorityTags();
-      render();
-      alert('設定を読み込みました');
-    } catch (err) {
-      alert('ファイルの読み込みに失敗しました');
-    }
-  };
-  reader.readAsText(file, 'UTF-8');
-  e.target.value = '';
-});
-
-/* ----- Meal Plan Export / Import ----- */
-
-function normalizeImportedDinner(dinner) {
-  return normalizeDinner(dinner);
-}
-
-function normalizeImportedEntry(entry) {
-  if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return null;
-  if (typeof entry.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(entry.date)) return null;
-  if (toISOString(toLocalDate(entry.date)) !== entry.date) return null;
-
-  const normalized = {
-    date: entry.date,
-    dinner: normalizeImportedDinner(entry.dinner),
-    breakfast: typeof entry.breakfast === 'string' && entry.breakfast ? entry.breakfast : null,
-    skipped: entry.skipped === true
-  };
-  if (!normalized.skipped && entry.locked === true) normalized.locked = true;
-  if (entry.ruleOverride && isValidRule(entry.ruleOverride)) {
-    normalized.ruleOverride = {
-      type: entry.ruleOverride.type,
-      value: entry.ruleOverride.value
-    };
-  }
-  return normalized;
-}
-
-function exportMealPlan() {
-  pruneOldEntries();
-  if (!entries.length) { alert('保存する献立がありません'); return; }
-  const data = {
-    _type: 'meal_planner_plan',
-    _schemaVersion: 2,
-    _exported: new Date().toISOString(),
-    entries: entries
-  };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = '献立_' + todayISO().replace(/-/g, '') + '.json';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-document.getElementById('plan-file').addEventListener('change', function(e) {
-  if (!e.target.files.length) return;
-  const file = e.target.files[0];
-  if (file.size > 2 * 1024 * 1024) {
-    alert('ファイルサイズが大きすぎます');
-    e.target.value = '';
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = function(ev) {
-    try {
-      const data = JSON.parse(ev.target.result);
-      if (data._type !== 'meal_planner_plan' || !Array.isArray(data.entries)) {
-        alert('献立プランナーの献立ファイルではありません');
-        return;
-      }
-      const importedEntries = data.entries
-        .map(normalizeImportedEntry)
-        .filter(Boolean)
-        .filter(entry => !isPrunableEntry(entry))
-        .sort((a, b) => a.date.localeCompare(b.date));
-      if (!importedEntries.length) {
-        alert('読み込める献立がありません（28日より古い行は除外されます）');
-        return;
-      }
-      if (!confirm('現在の献立を、保存ファイルの ' + importedEntries.length + ' 行で上書きします。よろしいですか？')) return;
-
-      entries = importedEntries;
-      saveEntries();
-      render();
-      alert('献立を読み込みました');
-    } catch (err) {
-      alert('ファイルの読み込みに失敗しました');
-    }
-  };
-  reader.readAsText(file, 'UTF-8');
-  e.target.value = '';
-});
-
-/* ----- CSV Import ----- */
-
-const csvDrop = document.getElementById('csv-drop');
-const csvFileInput = document.getElementById('csv-file');
-csvDrop.addEventListener('dragover', e => e.preventDefault());
-csvDrop.addEventListener('drop', e => {
-  e.preventDefault();
-  if (e.dataTransfer.files.length) loadCSV(e.dataTransfer.files[0]);
-});
-csvFileInput.addEventListener('change', e => {
+document.getElementById('csv-file').addEventListener('change', e => {
   if (e.target.files.length) loadCSV(e.target.files[0]);
+  e.target.value = '';
 });
 
 function loadCSV(file) {
@@ -2157,623 +1649,150 @@ function loadCSV(file) {
   }
   const reader = new FileReader();
   reader.onload = e => {
-    const data = csvToRecipes(parseCSV(e.target.result));
-    recipes = data.recipes;
-    mealSets = data.mealSets;
-    sideCandidates = data.sideCandidates;
-    soupCandidates = data.soupCandidates;
-    saveRecipeData();
-    const counts = {};
-    recipes.forEach(r => { counts[r.category] = (counts[r.category] || 0) + 1; });
-    const summary = Object.entries(counts)
-      .map(([k, v]) => k + ' ' + v).join('　');
-    document.getElementById('csv-status').textContent =
-      recipes.length + '件 / MealSet ' + mealSets.length + '件（' + summary + '）';
-    render();
+    const parsed = parseCSV(e.target.result);
+    const loaded = csvToRecipes(parsed);
+    if (!loaded.length) { alert('レシピを読み込めませんでした'); return; }
+    recipes = loaded;
+    Storage.set('recipes', recipes);
+    updateCSVStatus();
+    renderAll();
   };
   reader.readAsText(file, 'UTF-8');
 }
 
-/* ----- Priority Ingredients ----- */
-
-function renderPriorityTags() {
-  const container = document.getElementById('priority-tags');
-  container.innerHTML = '';
-  priorities.forEach((tag, idx) => {
-    const span = document.createElement('span');
-    span.className = 'pri-tag';
-
-    const text = document.createTextNode(tag + ' ');
-    span.appendChild(text);
-
-    const btn = document.createElement('button');
-    btn.textContent = '✕';
-    btn.addEventListener('click', () => removePriority(idx));
-    span.appendChild(btn);
-
-    container.appendChild(span);
-  });
+function updateCSVStatus() {
+  const elStatus = document.getElementById('csv-status');
+  if (!recipes.length) { elStatus.textContent = '未読み込み'; return; }
+  const counts = {};
+  recipes.forEach(r => { counts[r.role] = (counts[r.role] || 0) + 1; });
+  elStatus.textContent = recipes.length + '件（' +
+    Object.entries(counts).map(([k, v]) => k + ' ' + v).join('　') + '）';
 }
 
-function handlePriorityKey(e) {
-  if (e.key === 'Enter' && e.target.value.trim()) {
-    priorities.push(e.target.value.trim());
+/* ----- Backup ----- */
+
+function exportBackup() {
+  const data = {
+    _type: 'meal_planner_v2_backup',
+    _schemaVersion: 1,
+    _exported: new Date().toISOString(),
+    recipes, days, pantry, panHist, memos,
+    breakfastPatterns,
+    rules: getRules()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '献立プランナー_' + todayISO().replace(/-/g, '') + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('backup-file').addEventListener('change', function(e) {
+  if (!e.target.files.length) return;
+  const file = e.target.files[0];
+  if (file.size > 10 * 1024 * 1024) {
+    alert('ファイルサイズが大きすぎます');
     e.target.value = '';
-    Storage.set('prio', priorities);
-    renderPriorityTags();
+    return;
   }
-}
-
-function removePriority(idx) {
-  priorities.splice(idx, 1);
-  Storage.set('prio', priorities);
-  renderPriorityTags();
-}
-
-/* ----- Actions ----- */
-
-function addDays(numDays) {
-  if (!numDays) numDays = 7;
-  if (!recipes.length) { alert('CSVをインポートしてください'); return; }
-  const start = entries.length
-    ? addDaysToISO(entries[entries.length - 1].date, 1)
-    : todayISO();
-  const defaultBF = breakfastPatterns.length ? breakfastPatterns[0].name : null;
-  for (let i = 0; i < numDays; i++) {
-    entries.push({
-      date: addDaysToISO(start, i),
-      dinner: null,
-      breakfast: defaultBF,
-      skipped: false
-    });
-  }
-  saveEntries();
-  render();
-  setTimeout(() => {
-    const tl = document.getElementById('timeline');
-    if (tl.lastElementChild) {
-      tl.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data._type !== 'meal_planner_v2_backup') {
+        alert('このアプリのバックアップファイルではありません');
+        return;
+      }
+      if (!confirm('現在のデータをすべて置き換えます。よろしいですか？')) return;
+      if (Array.isArray(data.recipes)) { recipes = data.recipes; Storage.set('recipes', recipes); }
+      if (data.days && typeof data.days === 'object' && !Array.isArray(data.days)) { days = data.days; saveDays(); }
+      if (Array.isArray(data.pantry)) { pantry = data.pantry; savePantry(); }
+      if (data.panHist && typeof data.panHist === 'object' && !Array.isArray(data.panHist)) {
+        panHist = data.panHist;
+        Storage.set('panHist', panHist);
+      }
+      if (Array.isArray(data.memos)) { memos = data.memos; saveMemos(); }
+      if (Array.isArray(data.breakfastPatterns)) {
+        breakfastPatterns = data.breakfastPatterns.filter(p => p && typeof p.name === 'string');
+        Storage.set('bpats', breakfastPatterns);
+      }
+      if (data.rules && typeof data.rules === 'object' && !Array.isArray(data.rules)) {
+        Storage.set('rules', data.rules);
+      }
+      updateCSVStatus();
+      renderRules();
+      renderBreakfastPatterns();
+      renderMemos();
+      renderAll();
+      alert('読み込みました');
+    } catch {
+      alert('ファイルの読み込みに失敗しました');
     }
-  }, 100);
-}
-
-function lotteryDrafts() {
-  if (!recipes.length) return;
-  const targets = [];
-  entries.forEach((entry, idx) => {
-    if (entry.date >= todayISO() && !entry.skipped && !entry.locked) {
-      const rule = getEffectiveRule(entry);
-      const count = filterByRule(recipes, rule).length;
-      targets.push({ idx, count });
-    }
-  });
-  if (!targets.length) return;
-  targets.sort((a, b) => a.count - b.count);
-  for (const target of targets) {
-    const result = drawForEntry(target.idx);
-    if (result) entries[target.idx].dinner = result;
-  }
-  saveEntries();
-  render();
-}
-
-function resetAll() {
-  if (!entries.length) return;
-  if (!confirm('献立をすべてクリアしますか？\n（レシピCSVと朝食パターンはそのまま残ります）')) return;
-  entries = [];
-  saveEntries();
-  render();
-}
-
-/* ----- Per-entry actions ----- */
-
-function toggleSkip(idx) {
-  entries[idx].skipped = !entries[idx].skipped;
-  if (entries[idx].skipped) { entries[idx].dinner = null; entries[idx].locked = false; }
-  saveEntries();
-  render();
-}
-
-function toggleLock(idx) {
-  if (entries[idx].skipped) return;
-  entries[idx].locked = !entries[idx].locked;
-  saveEntries();
-  render();
-}
-
-function setEntryRuleOverride(idx, value) {
-  const entry = entries[idx];
-  if (!entry) return;
-  const baseRule = getRuleForDay(getDayName(entry.date));
-  const nextRule = JSON.parse(value);
-  if (isSameRule(nextRule, baseRule)) {
-    delete entry.ruleOverride;
-  } else {
-    entry.ruleOverride = nextRule;
-  }
-  saveEntries();
-  render();
-}
-
-function toggleDayMenu(event, idx) {
-  event.stopPropagation();
-  const menu = document.getElementById('day-menu-' + idx);
-  if (!menu) return;
-  const isOpen = menu.classList.contains('open');
-  // close any other open menus
-  document.querySelectorAll('.day-menu.open').forEach(m => m.classList.remove('open'));
-  if (!isOpen) menu.classList.add('open');
-}
-
-function closeDayMenu(idx) {
-  const menu = document.getElementById('day-menu-' + idx);
-  if (menu) menu.classList.remove('open');
-}
-
-document.addEventListener('click', (e) => {
-  if (e.target.closest('.day-menu-wrap')) return;
-  document.querySelectorAll('.day-menu.open').forEach(m => m.classList.remove('open'));
+  };
+  reader.readAsText(file, 'UTF-8');
+  e.target.value = '';
 });
 
-function redrawEntry(idx) {
-  if (entries[idx].skipped) return;
-  const result = drawForEntry(idx);
-  if (result) entries[idx].dinner = result;
-  saveEntries();
-  render();
-}
-
-function pickRandom(list) {
-  return list.length ? list[Math.floor(Math.random() * list.length)] : null;
-}
-
-function pickDifferentCandidate(list, currentSlot) {
-  const currentName = currentSlot && currentSlot.name ? currentSlot.name : '';
-  const filtered = list.filter(item => item && item.name && item.name !== currentName);
-  return pickRandom(filtered.length ? filtered : list);
-}
-
-function redrawSlot(idx, slotName) {
-  const entry = entries[idx];
-  if (!entry || entry.skipped || entry.locked) return;
-  const dinner = normalizeDinner(entry.dinner) || {
-    schemaVersion: 2,
-    parseVersion: 3,
-    origin: 'manual',
-    mealSetId: null,
-    locks: emptyDinnerLocks(),
-    slots: emptyDinnerSlots(),
-    rawExample: ''
-  };
-  if (dinner.locks[slotName]) return;
-
-  if (slotName === 'main') {
-    entry.dinner = dinner;
-    redrawEntry(idx);
-    return;
-  }
-
-  if (slotName === 'side1' || slotName === 'side2') {
-    const mainId = dinner.slots.main && dinner.slots.main.recipeId;
-    let candidates = [];
-    if (mainId) {
-      mealSets
-        .filter(ms => String(ms.sourceRecipeId) === String(mainId) && ms.id !== dinner.mealSetId)
-        .forEach(ms => {
-          ['side1', 'side2'].forEach(name => {
-            if (ms.slots[name] && isUsableMealPart(ms.slots[name].name)) {
-              candidates.push(ms.slots[name]);
-            }
-          });
-        });
-    }
-    if (!candidates.length) candidates = sideCandidates;
-    const picked = pickDifferentCandidate(candidates, dinner.slots[slotName]);
-    if (picked) dinner.slots[slotName] = makeSlotFromCandidate(picked);
-  } else if (slotName === 'soup') {
-    const picked = pickDifferentCandidate(soupCandidates, dinner.slots.soup);
-    if (picked) dinner.slots.soup = makeSlotFromCandidate(picked);
-  }
-
-  entry.dinner = dinner;
-  saveEntries();
-  render();
-}
-
-function toggleSlotLock(idx, slotName) {
-  const entry = entries[idx];
-  if (!entry || entry.skipped || !entry.dinner) return;
-  const dinner = normalizeDinner(entry.dinner);
-  if (!dinner) return;
-  dinner.locks[slotName] = !dinner.locks[slotName];
-  entry.dinner = dinner;
-  saveEntries();
-  render();
-}
-
-function clearDinner(idx) {
-  entries[idx].dinner = null;
-  saveEntries();
-  render();
-}
-
-function toggleEditDinner(idx) {
-  const el = document.getElementById('edit-' + idx);
-  el.style.display = el.style.display === 'block' ? 'none' : 'block';
-}
-
-function cancelEdit(idx) {
-  document.getElementById('edit-' + idx).style.display = 'none';
-}
-
-function saveEdit(idx) {
-  const textarea = document.getElementById('edit-ta-' + idx);
-  const lines = textarea.value.split('\n').filter(l => l.trim());
-  if (!lines.length) {
-    entries[idx].dinner = null;
-  } else {
-    const existing = normalizeDinner(entries[idx].dinner);
-    const mainName = lines[0].trim();
-    const recipe = recipes.find(r => r.name === mainName);
-    const dinner = {
-      schemaVersion: 2,
-      parseVersion: 3,
-      origin: 'manual',
-      mealSetId: null,
-      locks: existing ? existing.locks : emptyDinnerLocks(),
-      slots: emptyDinnerSlots(),
-      rawExample: lines.slice(1).join('　')
-    };
-    dinner.slots.main = recipe ? makeSlotFromRecipe(recipe) : {
-      name: mainName,
-      recipeId: null,
-      ingredients: existing && existing.slots.main ? existing.slots.main.ingredients || '' : '',
-      book: existing && existing.slots.main ? existing.slots.main.book || '' : '',
-      page: existing && existing.slots.main ? existing.slots.main.page || '' : '',
-      category: existing && existing.slots.main ? existing.slots.main.category || '' : ''
-    };
-    ['side1', 'side2', 'soup'].forEach((slotName, offset) => {
-      const value = lines[offset + 1] ? lines[offset + 1].trim() : '';
-      if (!value) return;
-      dinner.slots[slotName] = {
-        name: value,
-        recipeId: findRecipeIdByName(value, recipes),
-        rawText: value
-      };
-    });
-    entries[idx].dinner = dinner;
-  }
-  saveEntries();
-  render();
-}
-
-function setBreakfast(idx, value) {
-  entries[idx].breakfast = value || null;
-  saveEntries();
-  render();
-}
-
-function deleteEntry(idx) {
-  const main = getDinnerMain(entries[idx].dinner);
-  const label = main && main.name
-    ? main.name + 'を削除しますか？'
-    : 'この行を削除しますか？';
-  if (!confirm(label)) return;
-  entries.splice(idx, 1);
-  saveEntries();
-  render();
-}
-
 /* ============================================================
-   RENDER
+   MODALS
    ============================================================ */
 
-function renderRulePicker(idx, entry, rule) {
-  let options = '';
-  RULE_OPTIONS.forEach(opt => {
-    const value = JSON.stringify({ type: opt.type, value: opt.value });
-    options += '<option value="' + escapeHTML(value) + '"' +
-      (isSameRule(opt, rule) ? ' selected' : '') +
-      '>' + escapeHTML(opt.label) + '</option>';
-  });
-
-  return '<label class="day-cat-picker">' +
-    '<span class="day-cat' + (entry.ruleOverride ? ' overridden' : '') + '">' +
-    escapeHTML(getRuleLabel(rule)) +
-    '</span>' +
-    '<select class="day-rule-select" aria-label="曜日ルール上書き" onchange="setEntryRuleOverride(' + idx + ', this.value)">' +
-    options +
-    '</select>' +
-    '</label>';
-}
-
-function renderRedrawButton(idx, entry) {
-  if (entry.skipped) return '';
-  const label = entry.dinner ? '主菜を再抽選' : '抽選';
-  return '<button class="day-btn redraw" onclick="redrawSlot(' + idx + ', \'main\')" aria-label="' + label + '" title="' + label + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.5 5.5"/><path d="M20 5v5h-5"/></svg></button>';
-}
-
-function renderSlotRow(idx, dinner, slotName, label, canRedraw) {
-  const slot = dinner.slots[slotName];
-  const isLocked = dinner.locks[slotName];
-  let html = '<div class="slot-row ' + slotName + (isLocked ? ' locked' : '') + '">' +
-    '<span class="slot-label">' + label + '</span>' +
-    '<span class="slot-name">' + escapeHTML(slot && slot.name ? slot.name : '—') + '</span>' +
-    '<span class="slot-actions">';
-  if (canRedraw) {
-    html += '<button class="day-btn" onclick="redrawSlot(' + idx + ', \'' + slotName + '\')">再抽選</button>';
-  }
-  if (slot && slot.name) {
-    html += '<button class="day-btn" onclick="openChangeNoteFromSlot(' + idx + ', \'' + slotName + '\')">メモ</button>';
-  }
-  html += '<button class="day-btn" onclick="toggleSlotLock(' + idx + ', \'' + slotName + '\')">' +
-    (isLocked ? '解除' : '固定') +
-    '</button>';
-  html += '</span></div>';
-  return html;
-}
-
-function render() {
-  pruneOldEntries();
-  const tl = document.getElementById('timeline');
-
-  if (!recipes.length && !entries.length) {
-    tl.innerHTML = '<div class="tl-empty">レシピCSVをインポートしてください</div>';
-    return;
-  }
-  if (!entries.length) {
-    tl.innerHTML = '<div class="tl-empty">「＋7日分追加」で献立欄を作成</div>';
-    return;
-  }
-
-  tl.innerHTML = '';
-  entries.forEach((entry, idx) => {
-    const isPast = entry.date < todayISO();
-    const isSkipped = entry.skipped;
-    const isLocked = entry.locked && !isSkipped;
-
-    const row = document.createElement('div');
-    row.className = 'day-row' +
-      (isPast ? ' past' : '') +
-      (isSkipped ? ' skipped' : '') +
-      (isLocked ? ' locked' : '');
-
-    // --- Left side: dinner ---
-    const left = document.createElement('div');
-    left.className = 'day-left';
-
-    const rule = getEffectiveRule(entry);
-    const rulePicker = renderRulePicker(idx, entry, rule);
-    const redrawButton = renderRedrawButton(idx, entry);
-
-    let html = '<div class="day-header">' +
-      '<span class="day-title">' +
-      '<span class="day-name">' +
-      '<span class="day-date">' + escapeHTML(formatDate(entry.date)) + '</span>' +
-      escapeHTML(getDayNameEN(entry.date)) +
-      '</span>' +
-      redrawButton +
-      '</span>' +
-      rulePicker +
-      '</div>';
-
-    if (isSkipped) {
-      html += '<div class="day-main"><span class="day-main-text">— スキップ</span></div>';
-      html += '<div class="day-actions">' +
-        '<button onclick="toggleSkip(' + idx + ')">スキップ解除</button>' +
-        '<button onclick="deleteEntry(' + idx + ')">削除</button>' +
-        '</div>';
-    } else if (entry.dinner) {
-      const dinner = normalizeDinner(entry.dinner);
-      entry.dinner = dinner;
-      const lockLabel = isLocked ? 'ロック解除' : 'ロック';
-
-      html += '<div class="slot-list">' +
-        renderSlotRow(idx, dinner, 'main', '主菜', true) +
-        renderSlotRow(idx, dinner, 'side1', '副菜1', true) +
-        renderSlotRow(idx, dinner, 'side2', '副菜2', true) +
-        renderSlotRow(idx, dinner, 'soup', '汁物', true) +
-        '</div>';
-      html += '<div class="day-main"><span class="day-inline-actions">' +
-        '<button class="day-btn" onclick="toggleEditDinner(' + idx + ')">編集</button>' +
-        '<button class="day-btn" onclick="clearDinner(' + idx + ')">クリア</button>' +
-        '<button class="day-btn" onclick="toggleLock(' + idx + ')">' + lockLabel + '</button>' +
-        '<button class="day-btn" onclick="toggleSkip(' + idx + ')">スキップ</button>' +
-        '<button class="day-btn danger" onclick="deleteEntry(' + idx + ')">削除</button>' +
-        '</span>';
-      html += '</div>';
-      const mainSlot = dinner.slots.main;
-      if (mainSlot && mainSlot.ingredients) {
-        html += '<details class="ing-toggle" open><summary>材料</summary>' +
-          '<div class="ing-content">' + escapeHTML(mainSlot.ingredients) + '</div>';
-        if (mainSlot.book) {
-          html += '<div class="ing-ref">' + escapeHTML(mainSlot.book) +
-            (mainSlot.page ? ' p.' + escapeHTML(mainSlot.page) : '') +
-            '</div>';
-        }
-        html += '</details>';
-      }
-      if (dinner.rawExample) {
-        html += '<div class="day-sides">献立例: ' + escapeHTML(dinner.rawExample) + '</div>';
-      }
-      html += '<div class="day-edit" id="edit-' + idx + '">' +
-        '<textarea id="edit-ta-' + idx + '"></textarea>' +
-        '<div class="day-edit-actions">' +
-        '<button onclick="cancelEdit(' + idx + ')">キャンセル</button>' +
-        '<button class="save-btn" onclick="saveEdit(' + idx + ')">保存</button>' +
-        '</div></div>';
-    } else {
-      html += '<div class="day-main">' +
-        '<span class="day-main-text" style="color:var(--text-faint)">—</span>';
-      html += '<span class="day-inline-actions">' +
-        '<button class="day-btn" onclick="toggleEditDinner(' + idx + ')">手入力</button>' +
-        '<button class="day-btn" onclick="toggleSkip(' + idx + ')">スキップ</button>' +
-        '<button class="day-btn danger" onclick="deleteEntry(' + idx + ')">削除</button>' +
-        '</span>';
-      html += '</div>';
-      html += '<div class="day-edit" id="edit-' + idx + '">' +
-        '<textarea id="edit-ta-' + idx + '"></textarea>' +
-        '<div class="day-edit-actions">' +
-        '<button onclick="cancelEdit(' + idx + ')">キャンセル</button>' +
-        '<button class="save-btn" onclick="saveEdit(' + idx + ')">保存</button>' +
-        '</div></div>';
-    }
-
-    left.innerHTML = html;
-
-    // Set textarea value via DOM (not innerHTML) to avoid entity issues
-    if (entry.dinner) {
-      const ta = left.querySelector('#edit-ta-' + idx);
-      if (ta) {
-        const dinner = normalizeDinner(entry.dinner);
-        ta.value = [
-          dinner && dinner.slots.main ? dinner.slots.main.name : '',
-          dinner && dinner.slots.side1 ? dinner.slots.side1.name : '',
-          dinner && dinner.slots.side2 ? dinner.slots.side2.name : '',
-          dinner && dinner.slots.soup ? dinner.slots.soup.name : ''
-        ].filter(Boolean).join('\n');
-      }
-    }
-
-    // --- Right side: breakfast ---
-    const right = document.createElement('div');
-    right.className = 'day-bf';
-
-    const bfLabel = document.createElement('div');
-    bfLabel.className = 'day-bf-label';
-    bfLabel.textContent = '朝';
-    right.appendChild(bfLabel);
-
-    // 選択中パターンを改行表示（selectの表示はopacity:0で隠している）
-    const bfText = document.createElement('div');
-    bfText.className = 'day-bf-text';
-    bfText.textContent = (entry.breakfast || '—').replace(/・/g, '\n');
-    right.appendChild(bfText);
-
-    const select = document.createElement('select');
-    select.addEventListener('change', function() { setBreakfast(idx, this.value); });
-
-    const emptyOpt = document.createElement('option');
-    emptyOpt.value = '';
-    emptyOpt.textContent = '—';
-    select.appendChild(emptyOpt);
-
-    breakfastPatterns.forEach(p => {
-      const opt = document.createElement('option');
-      opt.value = p.name;
-      opt.textContent = p.name;
-      if (entry.breakfast === p.name) opt.selected = true;
-      select.appendChild(opt);
-    });
-
-    if (entry.breakfast && !breakfastPatterns.some(p => p.name === entry.breakfast)) {
-      const opt = document.createElement('option');
-      opt.value = entry.breakfast;
-      opt.textContent = entry.breakfast;
-      opt.selected = true;
-      select.appendChild(opt);
-    }
-
-    right.appendChild(select);
-
-    row.appendChild(left);
-    row.appendChild(right);
-    tl.appendChild(row);
-  });
-}
-
-/* ============================================================
-   SHOPPING LIST
-   ============================================================ */
-
-function findBreakfastIngredients(name) {
-  if (!name) return '';
-  const pattern = breakfastPatterns.find(p => p.name === name);
-  return pattern && pattern.ingredients ? pattern.ingredients : '';
-}
-
-function openShoppingList() {
-  const body = document.getElementById('shop-body');
-  const items = [];
-
-  function collectItems(filter) {
-    entries.forEach(entry => {
-      if (!filter(entry)) return;
-      const parts = [];
-      const dinner = normalizeDinner(entry.dinner);
-      if (dinner && dinner.slots.main && dinner.slots.main.ingredients) {
-        parts.push(dinner.slots.main.ingredients);
-      }
-      if (dinner) {
-        ['side1', 'side2', 'soup'].forEach(slotName => {
-          const slot = dinner.slots[slotName];
-          if (!slot || !slot.recipeId) return;
-          const recipe = findRecipeById(slot.recipeId);
-          if (recipe && recipe.ingredients) {
-            parts.push('【' + (slotName === 'soup' ? '汁物' : '副菜') + '】' + recipe.ingredients);
-          }
-        });
-      }
-      const bfIng = findBreakfastIngredients(entry.breakfast);
-      if (bfIng) parts.push('【朝】' + bfIng);
-      if (parts.length) {
-        items.push({
-          label: getDayName(entry.date) + ' ' + formatDate(entry.date),
-          text: parts.join('\n')
-        });
-      }
-    });
-  }
-
-  collectItems(e => e.dinner || e.breakfast);
-
-  if (items.length) {
-    body.innerHTML = '';
-    items.forEach(item => {
-      const div = document.createElement('div');
-      div.className = 'shop-day';
-
-      const h3 = document.createElement('h3');
-      h3.textContent = item.label;
-      div.appendChild(h3);
-
-      const pre = document.createElement('pre');
-      pre.textContent = item.text;
-      div.appendChild(pre);
-
-      body.appendChild(div);
-    });
-  } else {
-    body.innerHTML = '<div style="color:var(--text-faint);font-size:13px">献立を作成してください</div>';
-  }
-
-  document.getElementById('shop-overlay').classList.add('open');
+function openModal(name) {
+  if (name === 'memo') renderMemos();
+  if (name === 'settings') { updateCSVStatus(); renderRules(); renderBreakfastPatterns(); }
+  document.getElementById('ov-' + name).classList.add('open');
   document.body.style.overflow = 'hidden';
 }
 
-function closeShoppingList(e) {
-  if (e && e.target !== document.getElementById('shop-overlay')) return;
-  document.getElementById('shop-overlay').classList.remove('open');
+function closeModal(e, name) {
+  if (e && e.target !== document.getElementById('ov-' + name)) return;
+  document.getElementById('ov-' + name).classList.remove('open');
   document.body.style.overflow = '';
+  renderAll();
 }
 
 /* ============================================================
-   INIT
+   RENDER ALL / INIT
    ============================================================ */
 
-normalizeEntries();
-saveRecipeData();
-renderRules();
-renderBreakfastPatterns();
-renderPriorityTags();
-renderChangeNoteButton();
-render();
+function renderCounts() {
+  const open = memos.filter(m => !m.done).length;
+  document.getElementById('memo-count').textContent = open ? String(open) : '';
+}
 
-if (recipes.length) {
-  document.getElementById('csv-status').textContent =
-    recipes.length + '件 / MealSet ' + mealSets.length + '件 読み込み済';
+function renderAll() {
+  renderStrip();
+  renderPantryBar();
+  renderDay();
+  renderPanel();
+  renderCounts();
+}
+
+/* 旧バージョンで誤分割されたまま保存されたレシピデータを起動時に修復する */
+(function repairStoredRecipes() {
+  let changed = false;
+  recipes.forEach(r => {
+    ['pairings', 'keyIngredients', 'tags'].forEach(k => {
+      if (Array.isArray(r[k])) {
+        const fixed = repairSplitList(r[k]);
+        if (fixed.length !== r[k].length) { r[k] = fixed; changed = true; }
+      }
+    });
+  });
+  if (changed) Storage.set('recipes', recipes);
+})();
+
+renderAll();
+
+if (LS._memory) {
+  const note = el('div', null, '※ プレビュー環境のため、データはリロードすると消えます');
+  note.style.cssText = 'padding:2px 24px;font-size:11px;color:#9AA1A9;';
+  document.body.insertBefore(note, document.body.firstChild);
 }
 </script>
-
-
-</body></html>
+</body>
+</html>
