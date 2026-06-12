@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>献立プランナー</title>
+<title>MEAL PLANNER</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="献立プランナー">
+<meta name="apple-mobile-web-app-title" content="MEAL PLANNER">
 <link rel="apple-touch-icon" href="icon-180.png">
 <style>
 :root {
@@ -222,24 +222,33 @@ input, select, textarea { font-family: var(--font); }
 .mm-add button { background: none; border: none; font-size: 12px; color: var(--accent); padding: 0; white-space: nowrap; }
 .mm-copy { background: none; border: 1px solid var(--line); border-radius: 999px; font-size: 11px; color: var(--text-mid); padding: 2px 14px; margin-top: 14px; }
 
-.rg { display: grid; grid-template-columns: 28px 1fr; gap: 6px 14px; align-items: center; }
+.rg { display: grid; grid-template-columns: 28px 1fr; gap: 10px 14px; align-items: center; }
 .rg .rl { font-size: 12px; color: var(--text-faint); }
-.rg select {
-  font-size: 13px; font-weight: 300; color: var(--text);
-  background: transparent; border: none; border-bottom: 1px solid var(--line);
-  border-radius: 0; padding: 4px 0; width: 100%; -webkit-appearance: none; appearance: none; outline: none;
-}
+.rg .dv-rule-wrap { justify-self: start; }
 .lnk { background: none; border: none; font-size: 11px; color: var(--text-faint); text-decoration: underline; text-underline-offset: 2px; padding: 0; margin-top: 10px; }
 
-.bp-row { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--line); padding: 4px 0; }
-.bp-row input { border: none; outline: none; background: transparent; font-weight: 300; color: var(--text); padding: 2px 0; min-width: 0; }
-.bp-row .b-n { flex: 2; font-size: 13px; }
-.bp-row .b-i { flex: 3; font-size: 12px; color: var(--text-mid); }
-.bp-row button { background: none; border: none; color: var(--text-faint); font-size: 12px; padding: 0; }
+.bp-item { border-bottom: 1px solid var(--line); }
+.bp-view { display: flex; align-items: flex-start; gap: 8px; padding: 8px 0; cursor: pointer; }
+.bp-view-text { flex: 1; min-width: 0; }
+.bp-view-name { font-size: 13px; }
+.bp-view-ing { font-size: 12px; color: var(--text-mid); margin-top: 2px; }
+.bp-x { background: none; border: none; color: var(--text-faint); font-size: 12px; padding: 2px 4px; flex-shrink: 0; }
+.bp-edit { display: flex; flex-direction: column; gap: 2px; padding: 8px 0 10px; }
+.bp-edit textarea, .bp-add textarea {
+  width: 100%; border: none; border-bottom: 1px solid var(--line); outline: none;
+  background: transparent; font-weight: 300; color: var(--text); font-family: inherit;
+  padding: 4px 0; resize: none; overflow: hidden; line-height: 1.5;
+}
+.bp-edit .b-n, .bp-add .b-n { font-size: 13px; }
+.bp-edit .b-i, .bp-add .b-i { font-size: 12px; color: var(--text-mid); }
+.bp-done { background: none; border: none; font-size: 11px; color: var(--accent); padding: 4px 0 0; align-self: flex-end; }
+.bp-add { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; }
+.bp-add button { background: none; border: none; font-size: 12px; color: var(--accent); padding: 6px 0 0; align-self: flex-start; white-space: nowrap; }
 
 .csv-d { border: 1px dashed var(--line); border-radius: 8px; padding: 16px; text-align: center; color: var(--text-mid); font-size: 12px; cursor: pointer; }
 .csv-d input { display: none; }
-.csv-s { margin-top: 6px; font-size: 11px; color: var(--text-faint); }
+.csv-loaded { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-mid); }
+.csv-loaded .lnk { margin-top: 0; }
 
 .bk-row { display: flex; gap: 16px; }
 .bk-row button { background: none; border: 1px solid var(--line); border-radius: 999px; font-size: 11px; color: var(--text-mid); padding: 2px 14px; }
@@ -267,7 +276,7 @@ input, select, textarea { font-family: var(--font); }
 <body>
 
 <div class="hd">
-  <h1>献立プランナー</h1>
+  <h1>MEAL PLANNER</h1>
   <div class="hd-a">
     <button onclick="openModal('memo')">Notionメモ<span class="cnt" id="memo-count"></span></button>
     <button onclick="openModal('settings')">設定</button>
@@ -312,37 +321,44 @@ input, select, textarea { font-family: var(--font); }
     <div class="modal-title">設定</div>
 
     <div class="m-sec">
-      <div class="m-lb">レシピCSV</div>
-      <div class="csv-d" onclick="document.getElementById('csv-file').click()">
-        タップしてCSVを選択
-        <input type="file" id="csv-file" accept=".csv">
-      </div>
-      <div class="csv-s" id="csv-status"></div>
-    </div>
-
-    <div class="m-sec">
-      <div class="m-lb">曜日ルール</div>
-      <div class="rg" id="rules-grid"></div>
-      <button class="lnk" onclick="resetRules()">デフォルトに戻す</button>
-    </div>
-
-    <div class="m-sec">
-      <div class="m-lb">朝食パターン（タップで編集）</div>
-      <div id="bp-list"></div>
-      <div class="pt-add">
-        <input type="text" id="bp-name-input" placeholder="メニュー名…" style="flex:2">
-        <input type="text" id="bp-ing-input" placeholder="材料（任意）…" style="flex:3">
-        <button onclick="addBreakfastPattern()">追加</button>
-      </div>
-    </div>
-
-    <div class="m-sec">
       <div class="m-lb">バックアップ（全データ）</div>
       <div class="bk-row">
         <button onclick="exportBackup()">書き出し</button>
         <button onclick="document.getElementById('backup-file').click()">読み込み</button>
         <input type="file" id="backup-file" accept=".json" style="display:none">
       </div>
+    </div>
+
+    <div class="m-sec">
+      <div class="m-lb">レシピCSV</div>
+      <div class="csv-d" id="csv-drop" onclick="document.getElementById('csv-file').click()">
+        タップしてCSVを選択
+        <input type="file" id="csv-file" accept=".csv">
+      </div>
+      <div class="csv-loaded" id="csv-loaded" style="display:none">
+        <span id="csv-status"></span>
+        <button class="lnk" onclick="document.getElementById('csv-file').click()">CSVを読み込み直す</button>
+      </div>
+    </div>
+
+    <div class="m-sec">
+      <div class="m-lb">朝食パターン（タップで編集）</div>
+      <div id="bp-list"></div>
+      <div class="bp-add">
+        <textarea id="bp-name-input" class="b-n" rows="1" placeholder="メニュー名…"
+                  oninput="autoGrow(this)"
+                  onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}"></textarea>
+        <textarea id="bp-ing-input" class="b-i" rows="1" placeholder="材料（任意）…"
+                  oninput="autoGrow(this)"
+                  onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}"></textarea>
+        <button onclick="addBreakfastPattern()">＋ 追加</button>
+      </div>
+    </div>
+
+    <div class="m-sec">
+      <div class="m-lb">曜日ルール</div>
+      <div class="rg" id="rules-grid"></div>
+      <button class="lnk" onclick="resetRules()">デフォルトに戻す</button>
     </div>
   </div>
 </div>
@@ -847,12 +863,6 @@ function sideSuggestions(mainName, query) {
    HELPERS
    ============================================================ */
 
-function escapeHTML(str) {
-  return String(str)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-
 function el(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -993,8 +1003,8 @@ function renderDay() {
       view.appendChild(acts);
 
       // 在庫マッチ → 使い切り確認
-      const matched = pantry.filter(item => day.main.ingredients &&
-        recipeMatchesPantryItem({ name: day.main.name, ingredients: day.main.ingredients,
+      const matched = pantry.filter(item =>
+        recipeMatchesPantryItem({ name: day.main.name, ingredients: day.main.ingredients || '',
           keyIngredients: day.main.keyIngredients || [] }, item));
       if (matched.length) {
         const hint = el('div', 'pan-hint');
@@ -1059,6 +1069,7 @@ function renderDay() {
           const d = touchDay(date);
           const slot = d.sides[idx];
           if (!slot) return;
+          const oldRole = slot.role;
           let changed = false;
           if (slot.name !== name) { slot.name = name; changed = true; }
           const newRole = item ? item.role : (name ? guessSideRole(name) : slot.role);
@@ -1066,7 +1077,7 @@ function renderDay() {
           if (changed) {
             saveDays();
             renderStrip();
-            if (slot.role !== side.role) renderDay();
+            if (slot.role !== oldRole) renderDay();
           }
         }
       });
@@ -1200,6 +1211,7 @@ function buildCombo(opts) {
   input.placeholder = opts.placeholder || '';
   input.value = opts.value || '';
   const dd = el('div', 'combo-dd');
+  let committing = false;   // 候補タップ中はblur側のcommitを抑止（二重commit防止）
 
   const fill = () => {
     const items = opts.suggest(input.value.trim());
@@ -1213,7 +1225,9 @@ function buildCombo(opts) {
         e.preventDefault();
         input.value = it.name;
         dd.classList.remove('open');
+        committing = true;
         input.blur();
+        committing = false;
         opts.commit(it.name, it);
       });
       dd.appendChild(row);
@@ -1226,7 +1240,7 @@ function buildCombo(opts) {
   input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); });
   input.addEventListener('blur', () => {
     setTimeout(() => dd.classList.remove('open'), 150);
-    opts.commit(input.value.trim());
+    if (!committing) opts.commit(input.value.trim());
   });
 
   wrap.appendChild(input);
@@ -1548,6 +1562,10 @@ function renderRules() {
   ['月', '火', '水', '木', '金', '土', '日'].forEach(dayName => {
     const rule = rules[dayName] || DEFAULT_RULES[dayName];
     grid.appendChild(el('span', 'rl', dayName));
+    const wrap = el('div', 'dv-rule-wrap');
+    const chip = el('span', 'dv-rule-chip', ruleLabel(rule));
+    chip.style.background = ruleChipColor(rule);
+    wrap.appendChild(chip);
     const select = document.createElement('select');
     RULE_OPTIONS.forEach(opt => {
       const o = el('option', null, opt.label);
@@ -1559,10 +1577,12 @@ function renderRules() {
       const all = getRules();
       all[dayName] = JSON.parse(select.value);
       Storage.set('rules', all);
+      renderRules();
       renderDay();
       renderPanel();
     });
-    grid.appendChild(select);
+    wrap.appendChild(select);
+    grid.appendChild(wrap);
   });
 }
 
@@ -1573,36 +1593,70 @@ function resetRules() {
   renderPanel();
 }
 
+let bpEditing = null;        // 編集モードで開いている行のindex
+let bpFocusPending = false;  // タップ直後の1回だけフォーカスを当てる
+
+function autoGrow(ta) {
+  ta.style.height = 'auto';
+  ta.style.height = ta.scrollHeight + 'px';
+}
+
+function bpTextarea(cls, placeholder, value) {
+  const ta = document.createElement('textarea');
+  ta.className = cls;
+  ta.rows = 1;
+  ta.placeholder = placeholder;
+  ta.value = value || '';
+  ta.addEventListener('input', () => autoGrow(ta));
+  ta.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ta.blur(); } });
+  return ta;
+}
+
 function renderBreakfastPatterns() {
   const list = document.getElementById('bp-list');
   list.innerHTML = '';
   breakfastPatterns.forEach((pattern, idx) => {
-    const row = el('div', 'bp-row');
-    const nameInput = document.createElement('input');
-    nameInput.type = 'text';
-    nameInput.className = 'b-n';
-    nameInput.value = pattern.name;
-    nameInput.placeholder = 'メニュー名';
-    nameInput.addEventListener('blur', () => updateBreakfastPattern(idx, 'name', nameInput.value));
-    nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') nameInput.blur(); });
-    row.appendChild(nameInput);
-    const ingInput = document.createElement('input');
-    ingInput.type = 'text';
-    ingInput.className = 'b-i';
-    ingInput.value = pattern.ingredients;
-    ingInput.placeholder = '材料（任意）';
-    ingInput.addEventListener('blur', () => updateBreakfastPattern(idx, 'ingredients', ingInput.value));
-    ingInput.addEventListener('keydown', e => { if (e.key === 'Enter') ingInput.blur(); });
-    row.appendChild(ingInput);
-    const x = el('button', null, '✕');
-    x.addEventListener('click', () => {
-      breakfastPatterns.splice(idx, 1);
-      Storage.set('bpats', breakfastPatterns);
-      renderBreakfastPatterns();
-      renderDay();
-    });
-    row.appendChild(x);
-    list.appendChild(row);
+    const item = el('div', 'bp-item');
+    if (bpEditing === idx) {
+      const wrap = el('div', 'bp-edit');
+      const nameTa = bpTextarea('b-n', 'メニュー名…', pattern.name);
+      nameTa.addEventListener('blur', () => updateBreakfastPattern(idx, 'name', nameTa.value));
+      wrap.appendChild(nameTa);
+      const ingTa = bpTextarea('b-i', '材料（任意）…', pattern.ingredients);
+      ingTa.addEventListener('blur', () => updateBreakfastPattern(idx, 'ingredients', ingTa.value));
+      wrap.appendChild(ingTa);
+      const done = el('button', 'bp-done', '完了');
+      done.addEventListener('click', () => { bpEditing = null; renderBreakfastPatterns(); });
+      wrap.appendChild(done);
+      item.appendChild(wrap);
+      list.appendChild(item);
+      autoGrow(nameTa);
+      autoGrow(ingTa);
+      if (bpFocusPending) { bpFocusPending = false; nameTa.focus(); }
+    } else {
+      const row = el('div', 'bp-view');
+      const text = el('div', 'bp-view-text');
+      text.appendChild(el('div', 'bp-view-name', pattern.name));
+      if (pattern.ingredients) text.appendChild(el('div', 'bp-view-ing', pattern.ingredients));
+      row.appendChild(text);
+      const x = el('button', 'bp-x', '✕');
+      x.addEventListener('click', e => {
+        e.stopPropagation();
+        breakfastPatterns.splice(idx, 1);
+        if (bpEditing !== null && bpEditing > idx) bpEditing--;
+        Storage.set('bpats', breakfastPatterns);
+        renderBreakfastPatterns();
+        renderDay();
+      });
+      row.appendChild(x);
+      row.addEventListener('click', () => {
+        bpEditing = idx;
+        bpFocusPending = true;
+        renderBreakfastPatterns();
+      });
+      item.appendChild(row);
+      list.appendChild(item);
+    }
   });
 }
 
@@ -1630,6 +1684,8 @@ function addBreakfastPattern() {
   breakfastPatterns.push({ name, ingredients: ingInput.value.trim() });
   nameInput.value = '';
   ingInput.value = '';
+  nameInput.style.height = '';
+  ingInput.style.height = '';
   Storage.set('bpats', breakfastPatterns);
   renderBreakfastPatterns();
   renderDay();
@@ -1661,11 +1717,18 @@ function loadCSV(file) {
 }
 
 function updateCSVStatus() {
-  const elStatus = document.getElementById('csv-status');
-  if (!recipes.length) { elStatus.textContent = '未読み込み'; return; }
+  const drop = document.getElementById('csv-drop');
+  const loaded = document.getElementById('csv-loaded');
+  if (!recipes.length) {
+    drop.style.display = '';
+    loaded.style.display = 'none';
+    return;
+  }
+  drop.style.display = 'none';
+  loaded.style.display = '';
   const counts = {};
   recipes.forEach(r => { counts[r.role] = (counts[r.role] || 0) + 1; });
-  elStatus.textContent = recipes.length + '件（' +
+  document.getElementById('csv-status').textContent = 'レシピ ' + recipes.length + '件（' +
     Object.entries(counts).map(([k, v]) => k + ' ' + v).join('　') + '）';
 }
 
@@ -1684,7 +1747,7 @@ function exportBackup() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = '献立プランナー_' + todayISO().replace(/-/g, '') + '.json';
+  a.download = 'meal_planner_' + todayISO().replace(/-/g, '') + '.json';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -1743,7 +1806,7 @@ document.getElementById('backup-file').addEventListener('change', function(e) {
 
 function openModal(name) {
   if (name === 'memo') renderMemos();
-  if (name === 'settings') { updateCSVStatus(); renderRules(); renderBreakfastPatterns(); }
+  if (name === 'settings') { updateCSVStatus(); renderRules(); bpEditing = null; renderBreakfastPatterns(); }
   document.getElementById('ov-' + name).classList.add('open');
   document.body.style.overflow = 'hidden';
 }
