@@ -139,6 +139,11 @@ input, select, textarea { font-family: var(--font); }
 .combo-it .bdg { font-size: 10px; color: var(--accent); white-space: nowrap; }
 .combo-it .bdg.plain { color: var(--text-faint); }
 .slot-x { background: none; border: none; color: var(--text-faint); font-size: 13px; padding: 0 2px; }
+.dv-side-info {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  font-size: 11px; color: var(--text-faint); line-height: 1.6; padding: 2px 0 4px calc(32px + 10px); /* .slot-roleの幅 + .slotのgap */
+}
+.dv-side-info .ref { white-space: nowrap; }
 .slot-add { display: flex; gap: 16px; margin-top: 8px; }
 .slot-add button { background: none; border: none; font-size: 12px; color: var(--text-mid); padding: 0; }
 .slot-add button::before { content: '＋ '; color: var(--text-faint); }
@@ -212,6 +217,10 @@ input, select, textarea { font-family: var(--font); }
 .mm-body { flex: 1; min-width: 0; }
 .mm-text { font-size: 13px; }
 .mm-text.done { color: var(--text-faint); text-decoration: line-through; }
+.mm-edit {
+  width: 100%; border: none; border-bottom: 1px solid var(--accent); outline: none;
+  background: transparent; font-size: 13px; font-weight: 300; color: var(--text); padding: 2px 0;
+}
 .mm-meta { font-size: 10px; color: var(--text-faint); }
 .mm-x { background: none; border: none; color: var(--text-faint); font-size: 13px; }
 .mm-add { display: flex; gap: 10px; margin-top: 10px; }
@@ -724,11 +733,21 @@ function findRecipe(name) { return recipes.find(r => r.name === name) || null; }
    SCORING — 決定的・乱数なし。理由を文字列で返す
    ============================================================ */
 
+/* 「玉ねぎ」と「長ねぎ・万能ねぎ・ねぎ」は別の食材。
+   部分一致（共通の「ねぎ」）で互いにマッチしないようにする */
+function isTamanegi(s) { return /玉ねぎ|たまねぎ|玉ネギ|新玉/.test(s); }
+function isNaganegiKei(s) { return /ねぎ|ネギ/.test(s) && !isTamanegi(s); }
+function ingMatch(a, b) {
+  if (a === b) return true;
+  if ((isTamanegi(a) && isNaganegiKei(b)) || (isNaganegiKei(a) && isTamanegi(b))) return false;
+  return a.includes(b) || b.includes(a);
+}
+
 function recipeMatchesPantryItem(rec, item) {
   const n = item.name;
   if (!n) return false;
   return rec.name.includes(n) || rec.ingredients.includes(n) ||
-    rec.keyIngredients.some(k => k.includes(n) || n.includes(k));
+    rec.keyIngredients.some(k => ingMatch(k, n));
 }
 
 /** 指定日以外で、その主菜を最後に作った（=配置した）日 */
@@ -755,10 +774,10 @@ function plannedNearby(name, date, range) {
 }
 
 function keyOverlap(keysA, keysB) {
-  return keysA.filter(a => keysB.some(b => a === b || a.includes(b) || b.includes(a)));
+  return keysA.filter(a => keysB.some(b => ingMatch(a, b)));
 }
 
-function scoreCandidate(rec, date) {
+function scoreCandidate(rec, date, daySides) {
   let score = 0;
   const why = [];     // {text, neg}
 
@@ -766,6 +785,16 @@ function scoreCandidate(rec, date) {
     if (recipeMatchesPantryItem(rec, item)) {
       score += item.state === 'partial' ? 80 : 60;
       why.push({ text: item.name + (item.state === 'partial' ? '（残りあり）' : '') + 'が使える', neg: false });
+    }
+  }
+
+  // 先に副菜・汁物が入力されていたら、それと相性のいい主菜を優先する（加点は1回まで）
+  let paired = false;
+  for (const s of daySides) {
+    if (rec.pairings.some(p => p === s.name ||
+        (p.length >= 2 && s.name.length >= 2 && ingMatch(p, s.name)))) {
+      if (!paired) { score += 70; paired = true; }
+      why.push({ text: s.name + 'に合う', neg: false });
     }
   }
 
@@ -794,9 +823,10 @@ function scoreCandidate(rec, date) {
     const d = addDaysISO(date, offset);
     const other = days[d] && days[d].main;
     if (other && other.keyIngredients) {
+      // 材料かぶりは軽い減点に留める（使い切り優先。主菜名の重複は-100で別途防止）
       const overlap = keyOverlap(rec.keyIngredients, other.keyIngredients);
       if (overlap.length) {
-        score -= 40;
+        score -= 10;
         why.push({ text: (offset < 0 ? '前日' : '翌日') + 'と' + overlap[0] + 'がかぶる', neg: true });
       }
     }
@@ -809,17 +839,33 @@ function mainCandidates(date) {
   const rule = ruleForDate(date);
   const pool = filterByRule(recipes, rule);
   const ex = excluded[date] || new Set();
+  const daySides = days[date] ? days[date].sides.filter(s => s.name) : [];
   const scored = pool
     .filter(r => !ex.has(r.name))
-    .map(r => scoreCandidate(r, date));
+    .map(r => scoreCandidate(r, date, daySides));
   scored.sort((a, b) => b.score - a.score || a.rec.name.localeCompare(b.rec.name, 'ja'));
   return scored;
+}
+
+function isSideRole(r) { return r.role === '副菜' || r.role === '汁物'; }
+
+/** 副菜・汁物名から登録レシピを探す。「〇〇(メモ)」のような末尾括弧は1組ずつ外しながら再検索 */
+function findSideRecipe(name) {
+  let n = (name || '').trim();
+  while (n) {
+    const hit = recipes.find(r => isSideRole(r) && r.name === n);
+    if (hit) return hit;
+    const base = n.replace(/[（(][^（()）]*[）)]\s*$/, '').trim();
+    if (base === n) return null;
+    n = base;
+  }
+  return null;
 }
 
 /** 名前から副菜/汁物を推定（レシピ未登録の自由入力向け） */
 function guessSideRole(name) {
   const rec = findRecipe(name);
-  if (rec && (rec.role === '副菜' || rec.role === '汁物')) return rec.role;
+  if (rec && isSideRole(rec)) return rec.role;
   return /スープ|汁|ポタージュ|チャウダー|ミネストローネ/.test(name) ? '汁物' : '副菜';
 }
 
@@ -854,7 +900,7 @@ function sideSuggestions(mainName, query) {
       .forEach(([name, n]) => push(name, 'history', n));
   }
 
-  recipes.filter(r => r.role === '副菜' || r.role === '汁物')
+  recipes.filter(isSideRole)
     .forEach(r => push(r.name, 'list'));
   return out;
 }
@@ -1092,6 +1138,18 @@ function renderDay() {
       row.appendChild(x);
     }
     view.appendChild(row);
+
+    // 登録済みレシピなら材料とレシピ本を添える
+    const sideRec = findSideRecipe(side.name);
+    if (sideRec && (sideRec.ingredients || sideRec.book)) {
+      const info = el('div', 'dv-side-info');
+      if (sideRec.ingredients) info.appendChild(el('span', null, sideRec.ingredients));
+      if (sideRec.book) {
+        info.appendChild(el('span', 'ref',
+          sideRec.book + (sideRec.page ? ' p.' + sideRec.page : '')));
+      }
+      view.appendChild(info);
+    }
   });
   if (!locked) {
     const add = el('div', 'slot-add');
@@ -1481,6 +1539,8 @@ function addPantryInline() {
    NOTION MEMOS
    ============================================================ */
 
+let mmEditing = null;   // 編集モードで開いているメモのindex
+
 function renderMemos() {
   const list = document.getElementById('memo-list');
   list.innerHTML = '';
@@ -1495,17 +1555,52 @@ function renderMemos() {
     });
     row.appendChild(chk);
     const body = el('div', 'mm-body');
-    body.appendChild(el('div', 'mm-text' + (m.done ? ' done' : ''), m.text));
-    body.appendChild(el('div', 'mm-meta', m.date));
-    row.appendChild(body);
-    const x = el('button', 'mm-x', '✕');
-    x.addEventListener('click', () => {
-      memos.splice(idx, 1);
-      saveMemos();
-      renderMemos();
-    });
-    row.appendChild(x);
-    list.appendChild(row);
+    if (mmEditing === idx) {
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.className = 'mm-edit';
+      inp.value = m.text;
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); });
+      let committed = false;
+      const commit = () => {
+        if (committed) return;
+        committed = true;
+        const t = inp.value.trim();
+        if (t && t !== m.text) { m.text = t; saveMemos(); }
+        mmEditing = null;
+      };
+      inp.addEventListener('blur', () => {
+        commit();
+        // タップ先のボタン(click)が先に処理できるよう、combo同様150ms遅らせて再描画
+        setTimeout(() => { if (mmEditing === null) renderMemos(); }, 150);
+      });
+      body.appendChild(inp);
+      body.appendChild(el('div', 'mm-meta', m.date));
+      row.appendChild(body);
+      const editX = el('button', 'mm-x', '✕');
+      editX.addEventListener('click', () => {
+        memos.splice(idx, 1);
+        saveMemos();
+        renderMemos();
+      });
+      row.appendChild(editX);
+      list.appendChild(row);
+      inp.focus();
+    } else {
+      const txt = el('div', 'mm-text' + (m.done ? ' done' : ''), m.text);
+      txt.addEventListener('click', () => { mmEditing = idx; renderMemos(); });
+      body.appendChild(txt);
+      body.appendChild(el('div', 'mm-meta', m.date + '　タップで編集'));
+      row.appendChild(body);
+      const x = el('button', 'mm-x', '✕');
+      x.addEventListener('click', () => {
+        memos.splice(idx, 1);
+        saveMemos();
+        renderMemos();
+      });
+      row.appendChild(x);
+      list.appendChild(row);
+    }
   });
   renderCounts();
 }
@@ -1805,7 +1900,7 @@ document.getElementById('backup-file').addEventListener('change', function(e) {
    ============================================================ */
 
 function openModal(name) {
-  if (name === 'memo') renderMemos();
+  if (name === 'memo') { mmEditing = null; renderMemos(); }
   if (name === 'settings') { updateCSVStatus(); renderRules(); bpEditing = null; renderBreakfastPatterns(); }
   document.getElementById('ov-' + name).classList.add('open');
   document.body.style.overflow = 'hidden';
