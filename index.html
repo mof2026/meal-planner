@@ -193,6 +193,14 @@ input, select, textarea { font-family: var(--font); }
 .cl .w { font-size: 10px; color: var(--accent); white-space: nowrap; }
 .cl .w.plain { color: var(--text-faint); }
 
+.cp-tabs { display: flex; gap: 6px; margin: 10px 0; }
+.cp-tab {
+  font-size: 12px; color: var(--text-mid); background: var(--bg-soft);
+  border: 1px solid var(--line); border-radius: 12px; padding: 4px 12px;
+}
+.cp-tab.sel { color: #fff; background: var(--accent); border-color: var(--accent); }
+.cp-tab:active { opacity: .8; }
+
 /* ===== Modals ===== */
 .overlay { display: none; position: fixed; inset: 0; background: rgba(31,35,40,.25); z-index: 100; }
 .overlay.open { display: flex; align-items: flex-end; }
@@ -556,6 +564,7 @@ function csvToRecipes(parsed) {
         keyIngredients: keys,
         ingredients,
         pairings: splitList(row['合う副菜']),
+        substitutes: splitList(row['代用食材'] || ''),
         book: row['レシピ本'] || '',
         page: row['ページ'] || '',
         hotcookKey: row['ホットクックキー'] || ''
@@ -572,6 +581,7 @@ function csvToRecipes(parsed) {
       ingredients,
       pairings: [row['献立例1'], row['献立例2'], row['献立例3'], row['献立例4']]
         .filter(s => s && s.trim()).map(s => s.trim()),
+      substitutes: [],
       book: row['レシピ本'] || '',
       page: row['ページ'] || '',
       hotcookKey: row['ホットクックキー'] || ''
@@ -698,6 +708,17 @@ const excluded = {};            // date → Set(候補から外したレシピ�
 let panelShowsMain = true;      // 主菜決定後も「選び直す」で主菜候補に戻せる
 let panelShowAll = false;
 let panelQuery = '';
+let panelSideRole = '副菜';     // 副菜候補パネルで表示中のタブ（'副菜'|'汁物'）
+let panelRerenderTimer = 0;     // 副菜スロット入力時のパネル再描画デバウンス用タイマーID
+
+/** 候補パネルの表示状態を一括リセットする（日の切替・主菜決定・確定切替など、
+ *  パネルの見た目を初期状態に戻す必要がある箇所で共通利用する） */
+function resetPanelState(showMain) {
+  panelShowsMain = showMain;
+  panelShowAll = false;
+  panelQuery = '';
+  panelSideRole = '副菜';
+}
 
 function saveDays() { Storage.set('days', days); }
 function savePantry() { Storage.set('pantry', pantry); }
@@ -722,7 +743,8 @@ function touchDay(iso) {
 function mainSnapshot(rec) {
   return {
     name: rec.name, category: rec.category, ingredients: rec.ingredients,
-    keyIngredients: rec.keyIngredients, book: rec.book, page: rec.page,
+    keyIngredients: rec.keyIngredients, substitutes: rec.substitutes || [],
+    book: rec.book, page: rec.page,
     hotcookKey: rec.hotcookKey
   };
 }
@@ -743,11 +765,19 @@ function ingMatch(a, b) {
   return a.includes(b) || b.includes(a);
 }
 
-function recipeMatchesPantryItem(rec, item) {
+/** 在庫食材とレシピの照合種別を返す。'key'=通常の主要食材マッチ、'sub'=代用食材マッチ、null=不一致
+ *  レシピ名・材料本文中の文字列一致とkeyIngredientsは'key'、substitutesのみでのマッチは'sub' */
+function pantryMatchKind(rec, item) {
   const n = item.name;
-  if (!n) return false;
-  return rec.name.includes(n) || rec.ingredients.includes(n) ||
-    rec.keyIngredients.some(k => ingMatch(k, n));
+  if (!n) return null;
+  if (rec.name.includes(n) || rec.ingredients.includes(n) ||
+      rec.keyIngredients.some(k => ingMatch(k, n))) return 'key';
+  if ((rec.substitutes || []).some(s => ingMatch(s, n))) return 'sub';
+  return null;
+}
+
+function recipeMatchesPantryItem(rec, item) {
+  return pantryMatchKind(rec, item) !== null;
 }
 
 /** 指定日以外で、その主菜を最後に作った（=配置した）日 */
@@ -777,22 +807,28 @@ function keyOverlap(keysA, keysB) {
   return keysA.filter(a => keysB.some(b => ingMatch(a, b)));
 }
 
+/** 「合う副菜」照合の共通ヘルパ：完全一致、または双方2文字以上でingMatch（1文字語は完全一致のみ） */
+function pairingMatch(a, b) {
+  return a === b || (a.length >= 2 && b.length >= 2 && ingMatch(a, b));
+}
+
 function scoreCandidate(rec, date, daySides) {
   let score = 0;
   const why = [];     // {text, neg}
 
   for (const item of pantry) {
-    if (recipeMatchesPantryItem(rec, item)) {
+    const kind = pantryMatchKind(rec, item);
+    if (kind) {
       score += item.state === 'partial' ? 80 : 60;
-      why.push({ text: item.name + (item.state === 'partial' ? '（残りあり）' : '') + 'が使える', neg: false });
+      const suffix = kind === 'sub' ? 'が使える（代用）' : 'が使える';
+      why.push({ text: item.name + (item.state === 'partial' ? '（残りあり）' : '') + suffix, neg: false });
     }
   }
 
   // 先に副菜・汁物が入力されていたら、それと相性のいい主菜を優先する（加点は1回まで）
   let paired = false;
   for (const s of daySides) {
-    if (rec.pairings.some(p => p === s.name ||
-        (p.length >= 2 && s.name.length >= 2 && ingMatch(p, s.name)))) {
+    if (rec.pairings.some(p => pairingMatch(p, s.name))) {
       if (!paired) { score += 70; paired = true; }
       why.push({ text: s.name + 'に合う', neg: false });
     }
@@ -869,20 +905,22 @@ function guessSideRole(name) {
   return /スープ|汁|ポタージュ|チャウダー|ミネストローネ/.test(name) ? '汁物' : '副菜';
 }
 
-/** 副菜・汁物の候補。合う副菜 → 過去の組み合わせ実績 → 全リストの順 */
-function sideSuggestions(mainName, query) {
+/** 副菜・汁物の候補。合う副菜 → 過去の組み合わせ実績 → 全リストの順
+ *  role を渡すとその役割（guessSideRole基準）だけに絞る（省略時は従来どおり両方混在＝setMainの自動セット用） */
+function sideSuggestions(mainName, query, role) {
   const out = [];
   const seen = new Set();
   const q = (query || '').trim();
   const push = (name, src, count) => {
     if (!name || seen.has(name)) return;
     if (q && !name.includes(q)) return;
+    const r = guessSideRole(name);
+    if (role && r !== role) return;
     seen.add(name);
-    const role = guessSideRole(name);
-    const badge = src === 'pairing' ? '相性◎・' + role
-      : src === 'history' ? '実績' + count + '回・' + role
-      : role;
-    out.push({ name, role, badge, plain: src === 'list' });
+    const badge = src === 'pairing' ? '相性◎・' + r
+      : src === 'history' ? '実績' + count + '回・' + r
+      : r;
+    out.push({ name, role: r, badge, plain: src === 'list' });
   };
 
   if (mainName) {
@@ -902,6 +940,95 @@ function sideSuggestions(mainName, query) {
 
   recipes.filter(isSideRole)
     .forEach(r => push(r.name, 'list'));
+  return out;
+}
+
+/** 全dayを1回だけ走査し、主菜名→（副菜名→使用回数）のMapを作る（sideCandidatesの実績集計用）。
+ *  day.mainがある日のみ対象。毎候補ごとにdays全走査していたhistoryCountを廃止するための事前集計 */
+function buildSideHistoryMap() {
+  const map = new Map(); // mainName -> Map(sideName -> count)
+  for (const d of Object.values(days)) {
+    if (!d.main) continue;
+    let inner = map.get(d.main.name);
+    if (!inner) { inner = new Map(); map.set(d.main.name, inner); }
+    for (const s of d.sides) {
+      if (!s.name) continue;
+      inner.set(s.name, (inner.get(s.name) || 0) + 1);
+    }
+  }
+  return map;
+}
+
+/** 副菜・汁物候補（強化版）。決定的スコアで並べる。role: '副菜'|'汁物'
+ *  各要素: { name, rec: 登録レシピ|null, role, score, why: [{text, neg}] } */
+function sideCandidates(date, role) {
+  const day = getDay(date);
+  const usedNames = new Set(day.sides.filter(s => s.name && s.role === role).map(s => s.name));
+
+  const historyMap = buildSideHistoryMap();
+  const mainHistory = day.main ? (historyMap.get(day.main.name) || new Map()) : new Map();
+
+  const mainRec = day.main ? findRecipe(day.main.name) : null;
+  const pairingNames = (mainRec && Array.isArray(mainRec.pairings))
+    ? mainRec.pairings.filter(p => guessSideRole(p) === role) : [];
+
+  // 候補プール作成（name → { rec, fromPairing }）
+  const pool = new Map(); // name -> { rec }
+  recipes.filter(r => r.role === role).forEach(r => {
+    if (!pool.has(r.name)) pool.set(r.name, { rec: r });
+  });
+
+  const extra = []; // プールに無い名前（rec: null）。pairings由来 or 実績のみの未登録名
+  const poolNames = [...pool.keys()];
+  pairingNames.forEach(p => {
+    const hit = poolNames.find(name => pairingMatch(p, name));
+    if (!hit && !extra.some(e => e.name === p)) extra.push({ name: p, rec: null });
+  });
+  // 実績はあるがレシピ未登録・pairingsにも無い名前も候補プールに復活させる
+  // （旧sideSuggestionsが出していた「実績のみの副菜」相当）
+  for (const name of mainHistory.keys()) {
+    if (pool.has(name)) continue;
+    if (guessSideRole(name) !== role) continue;
+    if (extra.some(e => e.name === name)) continue;
+    extra.push({ name, rec: null });
+  }
+
+  const entries = [...[...pool.entries()].map(([name, v]) => ({ name, rec: v.rec })), ...extra]
+    .filter(e => !usedNames.has(e.name));
+
+  const out = entries.map(e => {
+    let score = 0;
+    const why = [];
+
+    const isPairing = pairingNames.some(p => pairingMatch(p, e.name));
+    if (isPairing) {
+      score += 70;
+      why.push({ text: '相性◎', neg: false });
+    }
+
+    if (day.main) {
+      const n = mainHistory.get(e.name) || 0;
+      if (n > 0) {
+        score += Math.min(n * 10, 30);
+        why.push({ text: '実績' + n + '回', neg: false });
+      }
+    }
+
+    if (e.rec) {
+      for (const item of pantry) {
+        const kind = pantryMatchKind(e.rec, item);
+        if (kind) {
+          score += item.state === 'partial' ? 80 : 60;
+          const suffix = kind === 'sub' ? 'が使える（代用）' : 'が使える';
+          why.push({ text: item.name + (item.state === 'partial' ? '（残りあり）' : '') + suffix, neg: false });
+        }
+      }
+    }
+
+    return { name: e.name, rec: e.rec, role, score, why };
+  });
+
+  out.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, 'ja'));
   return out;
 }
 
@@ -947,18 +1074,14 @@ function renderStrip() {
 function selectDay(date) {
   selectedDate = date;
   weekStart = mondayOf(date);
-  panelShowsMain = !getDay(date).main;
-  panelShowAll = false;
-  panelQuery = '';
+  resetPanelState(!getDay(date).main);
   renderAll();
 }
 
 function moveWeek(n) {
   weekStart = addDaysISO(weekStart, n * 7);
   selectedDate = weekStart;
-  panelShowsMain = !getDay(selectedDate).main;
-  panelShowAll = false;
-  panelQuery = '';
+  resetPanelState(!getDay(selectedDate).main);
   renderAll();
 }
 
@@ -1013,6 +1136,7 @@ function renderDay() {
     const d = touchDay(date);
     d.confirmed = !d.confirmed;
     saveDays();
+    resetPanelState(!getDay(date).main);
     renderAll();
   });
   head.appendChild(confirmBtn);
@@ -1025,6 +1149,9 @@ function renderDay() {
   if (day.main) {
     view.appendChild(el('div', 'dv-main-name', day.main.name));
     if (day.main.ingredients) view.appendChild(el('div', 'dv-ing', day.main.ingredients));
+    if (day.main.substitutes && day.main.substitutes.length) {
+      view.appendChild(el('div', 'dv-ref', '代用OK: ' + day.main.substitutes.join('、')));
+    }
     const refParts = [];
     if (day.main.book) refParts.push(day.main.book + (day.main.page ? ' p.' + day.main.page : ''));
     if (day.main.hotcookKey) refParts.push('ホットクック: ' + day.main.hotcookKey);
@@ -1033,13 +1160,13 @@ function renderDay() {
     if (!locked) {
       const acts = el('div', 'dv-acts');
       const reBtn = el('button', null, '選び直す');
-      reBtn.addEventListener('click', () => { panelShowsMain = true; panelShowAll = false; renderPanel(); });
+      reBtn.addEventListener('click', () => { resetPanelState(true); renderPanel(); });
       acts.appendChild(reBtn);
       const clrBtn = el('button', null, 'クリア');
       clrBtn.addEventListener('click', () => {
         touchDay(date).main = null;
         saveDays();
-        panelShowsMain = true;
+        resetPanelState(true);
         renderAll();
       });
       acts.appendChild(clrBtn);
@@ -1051,7 +1178,7 @@ function renderDay() {
       // 在庫マッチ → 使い切り確認
       const matched = pantry.filter(item =>
         recipeMatchesPantryItem({ name: day.main.name, ingredients: day.main.ingredients || '',
-          keyIngredients: day.main.keyIngredients || [] }, item));
+          keyIngredients: day.main.keyIngredients || [], substitutes: day.main.substitutes || [] }, item));
       if (matched.length) {
         const hint = el('div', 'pan-hint');
         matched.forEach(item => {
@@ -1110,7 +1237,10 @@ function renderDay() {
       const combo = buildCombo({
         value: side.name,
         placeholder: side.role + 'を入力…',
-        suggest: q => sideSuggestions(day.main ? day.main.name : '', q).slice(0, 30),
+        suggest: q => {
+          const curRole = (d0 => d0 && d0.sides[idx] ? d0.sides[idx].role : side.role)(days[date]);
+          return sideSuggestions(day.main ? day.main.name : '', q, curRole).slice(0, 30);
+        },
         commit: (name, item) => {
           const d = touchDay(date);
           const slot = d.sides[idx];
@@ -1124,6 +1254,16 @@ function renderDay() {
             saveDays();
             renderStrip();
             if (slot.role !== oldRole) renderDay();
+            // 副菜逆引き（pairings加点）を候補パネルに反映する。
+            // blur起因のcommit直後に即再描画するとパネル側へのタップを食うため150ms遅らせる（メモ欄と同方式）。
+            // 連続入力中は毎回再描画すると重いのでデバウンスし、かつ候補パネル内で検索欄に入力中なら
+            // 再描画するとフォーカスが飛んでしまうため見送る。
+            clearTimeout(panelRerenderTimer);
+            panelRerenderTimer = setTimeout(() => {
+              const ae = document.activeElement;
+              if (ae && ae.closest && ae.closest('#cand-panel')) return;
+              renderPanel();
+            }, 150);
           }
         }
       });
@@ -1141,9 +1281,12 @@ function renderDay() {
 
     // 登録済みレシピなら材料とレシピ本を添える
     const sideRec = findSideRecipe(side.name);
-    if (sideRec && (sideRec.ingredients || sideRec.book)) {
+    if (sideRec && (sideRec.ingredients || sideRec.book || (sideRec.substitutes && sideRec.substitutes.length))) {
       const info = el('div', 'dv-side-info');
       if (sideRec.ingredients) info.appendChild(el('span', null, sideRec.ingredients));
+      if (sideRec.substitutes && sideRec.substitutes.length) {
+        info.appendChild(el('span', null, '代用OK: ' + sideRec.substitutes.join('、')));
+      }
       if (sideRec.book) {
         info.appendChild(el('span', 'ref',
           sideRec.book + (sideRec.page ? ' p.' + sideRec.page : '')));
@@ -1255,9 +1398,7 @@ function setMain(date, name) {
     if (auto.length) d.sides = auto;
   }
   saveDays();
-  panelShowsMain = false;
-  panelShowAll = false;
-  panelQuery = '';
+  resetPanelState(false);
   renderAll();
 }
 
@@ -1325,22 +1466,22 @@ function renderPanel() {
     return;
   }
 
-  const showMain = panelShowsMain || !day.main;
+  const showMain = panelShowsMain;
 
   const head = el('div', 'cp-head');
   if (showMain) {
     head.appendChild(el('span', 'cp-title', '主菜の候補'));
     head.appendChild(el('span', 'cp-sub', ruleLabel(ruleForDate(date)) + 'から'));
-    if (day.main) {
-      const sw = el('button', 'cp-switch', '副菜候補へ');
-      sw.addEventListener('click', () => { panelShowsMain = false; panelShowAll = false; panelQuery = ''; renderPanel(); });
-      head.appendChild(sw);
-    }
+    const sw = el('button', 'cp-switch', day.main ? '副菜候補へ' : '副菜から選ぶ');
+    sw.addEventListener('click', () => {
+      resetPanelState(false); renderPanel();
+    });
+    head.appendChild(sw);
   } else {
     head.appendChild(el('span', 'cp-title', '副菜・汁物の候補'));
-    head.appendChild(el('span', 'cp-sub', day.main.name + 'に'));
+    head.appendChild(el('span', 'cp-sub', day.main ? day.main.name + 'に' : '主菜はあとで'));
     const sw = el('button', 'cp-switch', '主菜候補へ');
-    sw.addEventListener('click', () => { panelShowsMain = true; panelShowAll = false; panelQuery = ''; renderPanel(); });
+    sw.addEventListener('click', () => { resetPanelState(true); renderPanel(); });
     head.appendChild(sw);
   }
   panel.appendChild(head);
@@ -1349,7 +1490,7 @@ function renderPanel() {
   panel.appendChild(listWrap);
 
   if (showMain) renderMainCands(listWrap, date);
-  else renderSideCands(listWrap, date, day);
+  else renderSideCands(listWrap, date);
 }
 
 function renderMainCands(wrap, date) {
@@ -1435,26 +1576,103 @@ function buildCandCard(c, date) {
   return card;
 }
 
-function renderSideCands(wrap, date, day) {
+/** 副菜候補タップ時の共通処理：同役割の空スロットがあれば埋め、無ければ追加 */
+function pickSideCandidate(date, role, name) {
+  const d = touchDay(date);
+  const empty = d.sides.find(s => s.role === role && !s.name);
+  if (empty) empty.name = name;
+  else d.sides.push({ role, name });
+  saveDays();
+  renderStrip();
+  renderDay();
+  renderPanel();
+}
+
+function renderSideCands(wrap, date) {
   wrap.innerHTML = '';
-  const items = sideSuggestions(day.main.name, '');
-  if (!items.length) {
-    wrap.appendChild(el('div', 'cp-empty', '副菜・汁物のデータがまだありません。左の欄に自由入力できます。'));
+
+  const tabs = el('div', 'cp-tabs');
+  ['副菜', '汁物'].forEach(role => {
+    const btn = el('button', 'cp-tab' + (panelSideRole === role ? ' sel' : ''), role);
+    btn.addEventListener('click', () => {
+      if (panelSideRole === role) return;
+      panelSideRole = role;
+      panelShowAll = false;
+      panelQuery = '';
+      renderPanel();
+    });
+    tabs.appendChild(btn);
+  });
+  wrap.appendChild(tabs);
+
+  const all = sideCandidates(date, panelSideRole);
+
+  if (!all.length) {
+    wrap.appendChild(el('div', 'cp-empty', 'この役割の候補がありません。左の欄に自由入力できます。'));
     return;
   }
-  items.slice(0, 25).forEach(it => {
-    const row = el('button', 'cl');
-    row.appendChild(el('span', 'n', it.name));
-    row.appendChild(el('span', 'w' + (it.plain ? ' plain' : ''), it.badge));
-    row.addEventListener('click', () => {
-      const d = touchDay(date);
-      d.sides.push({ role: it.role, name: it.name });
-      saveDays();
-      renderStrip();
-      renderDay();
+
+  if (!panelShowAll) {
+    all.slice(0, 5).forEach(c => wrap.appendChild(buildSideCandCard(c, date)));
+    if (all.length > 5) {
+      const more = el('button', 'cp-more', 'すべて見る（' + all.length + '件）');
+      more.addEventListener('click', () => { panelShowAll = true; panelQuery = ''; renderPanel(); });
+      wrap.appendChild(more);
+    }
+  } else {
+    const search = document.createElement('input');
+    search.type = 'text';
+    search.className = 'cp-search';
+    search.placeholder = '名前・食材で検索…';
+    search.value = panelQuery;
+    const listDiv = el('div');
+    const renderList = () => {
+      listDiv.innerHTML = '';
+      const q = panelQuery.trim();
+      const hits = all.filter(c => !q || c.name.includes(q) || (c.rec && c.rec.ingredients.includes(q)));
+      hits.forEach(c => {
+        const row = el('button', 'cl');
+        row.appendChild(el('span', 'n', c.name));
+        if (c.why.length) row.appendChild(el('span', 'w', c.why.map(w => w.text).join('・')));
+        else row.appendChild(el('span', 'w plain', c.role));
+        row.addEventListener('click', () => pickSideCandidate(date, panelSideRole, c.name));
+        listDiv.appendChild(row);
+      });
+      if (!hits.length) listDiv.appendChild(el('div', 'cp-empty', '見つかりません（そのまま左の入力欄に自由入力もできます）'));
+    };
+    search.addEventListener('input', () => { panelQuery = search.value; renderList(); });
+    const back = el('button', 'cp-more', '← 候補5件に戻る');
+    back.addEventListener('click', () => { panelShowAll = false; renderPanel(); });
+    wrap.appendChild(back);
+    wrap.appendChild(search);
+    wrap.appendChild(listDiv);
+    renderList();
+  }
+}
+
+function buildSideCandCard(c, date) {
+  const card = el('div', 'cd');
+  card.addEventListener('click', () => pickSideCandidate(date, c.role, c.name));
+
+  const top = el('div', 'cd-top');
+  top.appendChild(el('span', 'cd-name', c.name));
+  top.appendChild(el('span', 'cd-cat', c.role));
+  card.appendChild(top);
+
+  if (c.why.length) {
+    const why = el('div', 'cd-why');
+    c.why.forEach((w, i) => {
+      if (i) why.appendChild(document.createTextNode('・'));
+      why.appendChild(el('span', w.neg ? 'neg' : null, w.text));
     });
-    wrap.appendChild(row);
-  });
+    card.appendChild(why);
+  }
+  if (c.rec && c.rec.ingredients) card.appendChild(el('div', 'cd-ing', c.rec.ingredients));
+  if (c.rec && c.rec.book) {
+    card.appendChild(el('div', 'dv-ref',
+      c.rec.book + (c.rec.page ? ' p.' + c.rec.page : '')));
+  }
+  return card;
 }
 
 /* ============================================================
@@ -1866,7 +2084,11 @@ document.getElementById('backup-file').addEventListener('change', function(e) {
         return;
       }
       if (!confirm('現在のデータをすべて置き換えます。よろしいですか？')) return;
-      if (Array.isArray(data.recipes)) { recipes = data.recipes; Storage.set('recipes', recipes); }
+      if (Array.isArray(data.recipes)) {
+        recipes = data.recipes;
+        normalizeRecipes(recipes);
+        Storage.set('recipes', recipes);
+      }
       if (data.days && typeof data.days === 'object' && !Array.isArray(data.days)) { days = data.days; saveDays(); }
       if (Array.isArray(data.pantry)) { pantry = data.pantry; savePantry(); }
       if (data.panHist && typeof data.panHist === 'object' && !Array.isArray(data.panHist)) {
@@ -1885,6 +2107,7 @@ document.getElementById('backup-file').addEventListener('change', function(e) {
       renderRules();
       renderBreakfastPatterns();
       renderMemos();
+      resetPanelState(!getDay(selectedDate).main);
       renderAll();
       alert('読み込みました');
     } catch {
@@ -1930,18 +2153,30 @@ function renderAll() {
   renderCounts();
 }
 
-/* 旧バージョンで誤分割されたまま保存されたレシピデータを起動時に修復する */
-(function repairStoredRecipes() {
+/** 保存済み/読み込んだレシピ配列を正規化する（起動時修復とバックアップ読み込みの両方から呼ぶ）。
+ *  - 旧バージョンが括弧内で誤分割したまま保存したpairings等を繋ぎ直す
+ *  - 配列であるべきフィールドが配列でなければ空配列に補正する（壊れたJSON対策）
+ *  - substitutes（代用食材）が無い旧データには空配列を補う
+ *  戻り値: 変更があったかどうか（呼び出し側でStorage.setするかの判断に使う） */
+function normalizeRecipes(list) {
   let changed = false;
-  recipes.forEach(r => {
-    ['pairings', 'keyIngredients', 'tags'].forEach(k => {
-      if (Array.isArray(r[k])) {
+  list.forEach(r => {
+    ['pairings', 'keyIngredients', 'tags', 'substitutes'].forEach(k => {
+      if (!Array.isArray(r[k])) {
+        r[k] = [];
+        changed = true;
+      } else if (k !== 'substitutes') {
         const fixed = repairSplitList(r[k]);
         if (fixed.length !== r[k].length) { r[k] = fixed; changed = true; }
       }
     });
   });
-  if (changed) Storage.set('recipes', recipes);
+  return changed;
+}
+
+/* 旧バージョンで誤分割されたまま保存されたレシピデータを起動時に修復する */
+(function repairStoredRecipes() {
+  if (normalizeRecipes(recipes)) Storage.set('recipes', recipes);
 })();
 
 renderAll();
